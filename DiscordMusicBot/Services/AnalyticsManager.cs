@@ -1,7 +1,5 @@
 ﻿using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
-using DiscordMusicBot.Utils;
-using Newtonsoft.Json;
 namespace DiscordMusicBot.Services
 {
     internal class AnalyticsManager : IServiceAnalytics
@@ -12,12 +10,12 @@ namespace DiscordMusicBot.Services
         public async Task Initialize()
         {
             _analyticData = Service.Get<IServiceDataManager>().LoadAnalytics();
+            await Task.CompletedTask;
         }
 
         public async Task AddSongAnalytics(string userName, SongData songData)
         {
             var userAnalytics = _analyticData.UserAnalyticData.FirstOrDefault(u => u.UserName == userName);
-
             if (userAnalytics.UserName != null)
             {
                 userAnalytics.SongHistory.Add(new SongAnlyticData { SongData = songData, NumberOfPlays = 1 });
@@ -32,19 +30,19 @@ namespace DiscordMusicBot.Services
                 });
 
                 var newUserAnalytics = _analyticData.UserAnalyticData.First(u => u.UserName == userName);
-                newUserAnalytics.SongHistory = newUserAnalytics.SongHistory.OrderBy(s => s.SongData.Title).ToList();
+                _analyticData.GlobalMostPlayedSongs = _analyticData.GlobalMostPlayedSongs.OrderByDescending(s => s.NumberOfPlays).ToList();
             }
             var globalSongData = _analyticData.GlobalMostPlayedSongs.FirstOrDefault(s => s.SongData.Title.Equals(songData.Title));
-            if (globalSongData.SongData.Title != "")
-            {
-                globalSongData.NumberOfPlays++;
-            }
-            else
+            if (globalSongData.SongData.Title == null || globalSongData.SongData.Title == "null")
             {
                 _analyticData.GlobalMostPlayedSongs.Add(new SongAnlyticData { SongData = songData, NumberOfPlays = 1 });
             }
+            else
+            {
+                globalSongData.NumberOfPlays++;
+            }
 
-            _analyticData.GlobalMostPlayedSongs = _analyticData.GlobalMostPlayedSongs.OrderBy(s => s.SongData.Title).ToList();
+            _analyticData.GlobalMostPlayedSongs = _analyticData.GlobalMostPlayedSongs.OrderBy(s => s.NumberOfPlays).ToList();
 
             for (int i = _analyticData.RecentSongHistory.Length - 1; i > 0; i--)
             {
@@ -54,10 +52,5 @@ namespace DiscordMusicBot.Services
 
             await Service.Get<IServiceDataManager>().SaveAnalytics(_analyticData);
         }
-
-        //public async Task AddCommandAnalytics(string userName, string command)
-        //{
-            //todo
-        //}
     }
 }

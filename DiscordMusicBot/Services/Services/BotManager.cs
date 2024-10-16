@@ -31,7 +31,7 @@ namespace DiscordMusicBot.Services.Services
                 Task.Run(async () =>
                 {
                     if (_client == null) return;
-                    await _client.SetCustomStatusAsync($"Song: {a.Title}");
+                    await _client.SetCustomStatusAsync($"Playin '{a.Title}'");
                 });
             });
 
@@ -110,7 +110,7 @@ namespace DiscordMusicBot.Services.Services
                         if (user == null) return;
                         if (user.IsBot) return;
 
-                        Debug.Log($"{user.Username} added the reaction {reaction.Emote.Name} to the message {message.Id}");
+                        Debug.Log($"<color=red>{user.Username}</color> <color=white>picked song</color> <color=cyan>{i}#</color>");
                         var results = Service.Get<IServiceYtdlp>().SearchResults;
                         _ = Task.Run(async () =>
                         {
@@ -128,7 +128,9 @@ namespace DiscordMusicBot.Services.Services
 
         private static Task Ev_Log(LogMessage msg)
         {
-            Debug.Log($"{msg.ToString()}");
+            var colorTag = msg.Severity == LogSeverity.Error || msg.Severity == LogSeverity.Critical ? "red" : "white";
+            colorTag = msg.Severity == LogSeverity.Warning ? "yellow" : colorTag;
+            Debug.Log($"<color={colorTag}>{msg.ToString()}</color>");
             return Task.CompletedTask;
         }
 

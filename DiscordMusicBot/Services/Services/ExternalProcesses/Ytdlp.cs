@@ -1,22 +1,20 @@
 ﻿using Discord.Audio;
 using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
-using DiscordMusicBot.Utils;
 using System.Diagnostics;
-using System.Threading;
 using Debug = DiscordMusicBot.Utils.Debug;
 
 namespace DiscordMusicBot.Services.Services.ExternalProcesses
 {
     internal class Ytdlp : IServiceYtdlp
     {
-        private List<SearchResultData>? _searchResults;
+        private List<SongData>? _searchResults;
         private bool _resultsReady;
 
-        public List<SearchResultData> SearchResults => _searchResults;
-        public async Task<List<SearchResultData>>? SearchYoutube(string query, int maxResults = 5)
+        public List<SongData> SearchResults => _searchResults;
+        public async Task<List<SongData>>? SearchYoutube(string query, int maxResults = 5)
         {
-            _searchResults = new List<SearchResultData>();
+            _searchResults = new List<SongData>();
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -54,16 +52,16 @@ namespace DiscordMusicBot.Services.Services.ExternalProcesses
                         var url = lines[i + 1].Trim();
                         var duration = lines[i + 2].Trim();
 
-                        Debug.Log($"Found: <color=cyan>{title}</color> <color=magenta>{url}</color>");
+                        Debug.Log($"{i}# <color=white>{title}</color>");
 
                         double.TryParse(duration, out double dduration);
 
                         var durationResult = dduration / 60d;
-                        _searchResults.Add(new SearchResultData
+                        _searchResults.Add(new SongData
                         {
                             Title = title,
                             Url = url,
-                            Duration = durationResult.ToString("0.00")
+                            Length = durationResult.ToString("0.00")
                         });
                     }
                     else
@@ -135,7 +133,7 @@ namespace DiscordMusicBot.Services.Services.ExternalProcesses
             if (ytDlpProcess.ExitCode != 0)
             {
                 string error = await ytDlpProcess.StandardError.ReadToEndAsync();
-                Console.WriteLine($"yt-dlp error: {error}");
+                Debug.Log($"yt-dlp error: {error}");
                 return null;
             }
 

@@ -1,12 +1,5 @@
 ﻿using Discord.Audio;
 using Discord.WebSocket;
-using Discord;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace DiscordMusicBot.Services.Interfaces
 {
     internal interface IServiceAudioManager : IService
@@ -19,5 +12,6 @@ namespace DiscordMusicBot.Services.Interfaces
         Task SkipSong(SocketSlashCommand command);
         Task ChangeVolume(SocketSlashCommand command);
         Task CheckAndJoinVoice(SocketSlashCommand command);
+        Task LeaveVoice(SocketSlashCommand command);
     }
 }

@@ -16,11 +16,14 @@
 
 -   **Release v0.1**
 -   **Slash Commands:**
-    -   `/play [url]`
-    -   `/search [keyword]`
-    -   `/volume [number]`
-    -   `/skip`
-    -   `/queue`
+    -   `/play [url]`       - Play an audio stream from youtube by url
+    -   `/search [keyword]` - Return and display search results from youtube by keywords
+    -   `/volume [number]`  - Change the volume from 0 - 100
+    -   `/skip`             - Skip the current song
+    -   `/queue`            - Display current song queue
+    -   `/history`          - Display recent song history
+    -   `/mostplayed`       - Display most played songs
+    -   `/leave`            - Leave voice
 
 ## Prerequisites 🚧
 

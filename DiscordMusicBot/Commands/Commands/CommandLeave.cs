@@ -1,28 +1,27 @@
 ﻿using Discord.WebSocket;
-using Discord;
 using DiscordMusicBot.Commands.Interfaces;
-using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
+using DiscordMusicBot.Services;
+using System.Text;
+using Discord;
 
 namespace DiscordMusicBot.Commands.Commands
 {
-    internal class CommandPlay : IDiscordCommand
+    internal class CommandLeave : IDiscordCommand
     {
-        private string _commandName = "play";
+        private string _commandName = "leave";
         public string CommandName => _commandName;
 
         public SlashCommandBuilder Register()
         {
             return new SlashCommandBuilder()
             .WithName(_commandName)
-            .WithDescription("Joins a voice channel and plays audio")
-            .AddOption("url", ApplicationCommandOptionType.String, "Youtube url", isRequired: true);
+            .WithDescription("Show recent song history");
         }
 
         public async Task ExecuteAsync(SocketSlashCommand command)
         {
-            var arg = command.Data.Options.First().Value;
-            await Service.Get<IServiceAudioManager>().PlaySong(command);
+            await Service.Get<IServiceAudioManager>().LeaveVoice(command);
         }
 
     }

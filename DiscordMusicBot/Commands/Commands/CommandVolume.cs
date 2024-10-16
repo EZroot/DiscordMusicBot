@@ -1,11 +1,6 @@
 ﻿using Discord.WebSocket;
 using Discord;
 using DiscordMusicBot.Commands.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
 

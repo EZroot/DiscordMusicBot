@@ -2,7 +2,6 @@
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 using Newtonsoft.Json;
-using System.Text.Json;
 
 namespace DiscordMusicBot.Services.Services
 {
@@ -23,7 +22,6 @@ namespace DiscordMusicBot.Services.Services
             var result = new AnalyticData
             {
                 GlobalMostPlayedSongs = analytics.GlobalMostPlayedSongs,
-                GlobalCommandUsage = analytics.GlobalCommandUsage,
                 UserAnalyticData = analytics.UserAnalyticData,
                 RecentSongHistory = analytics.RecentSongHistory
             };
@@ -40,7 +38,7 @@ namespace DiscordMusicBot.Services.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error during serialization: {ex.Message}");
+                Debug.Log($"Error during serialization: {ex.Message}");
             }
         }
 
@@ -76,7 +74,7 @@ namespace DiscordMusicBot.Services.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error during serialization: {ex.Message}");
+                Debug.Log($"Error during serialization: {ex.Message}");
             }
 
 
@@ -90,7 +88,6 @@ namespace DiscordMusicBot.Services.Services
             var defaultAnalytics = new AnalyticData
             {
                 GlobalMostPlayedSongs = new List<SongAnlyticData>(),  
-                GlobalCommandUsage = new List<CommandAnalyticData>(),  
                 UserAnalyticData = new List<UserAnalyticData>(),       
                 RecentSongHistory = new SongData[10] //Default song history is 10                    
             };
@@ -102,7 +99,7 @@ namespace DiscordMusicBot.Services.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error during serialization: {ex.Message}");
+                Debug.Log($"Error during serialization: {ex.Message}");
             }
 
 

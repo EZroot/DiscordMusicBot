@@ -2,13 +2,7 @@
 using DiscordMusicBot.Events;
 using DiscordMusicBot.Events.Events;
 using DiscordMusicBot.Services.Interfaces;
-using DiscordMusicBot.Utils;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Debug = DiscordMusicBot.Utils.Debug;
 
 namespace DiscordMusicBot.Services.Services.ExternalProcesses
@@ -53,12 +47,13 @@ namespace DiscordMusicBot.Services.Services.ExternalProcesses
                     string line;
                     while ((line = await process.StandardError.ReadLineAsync()) != null)
                     {
-                        Debug.Log($"FFMPEG:> <color=yellow>{line}</color>");
+                        //Ignore errors to avoid console spam
+                        //Debug.Log($"FFMPEG:> <color=yellow>{line}</color>");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error reading ffmpeg output: {ex.Message}");
+                    Debug.Log($"Error reading ffmpeg output: {ex.Message}");
                 }
             });
             return process;
@@ -105,7 +100,7 @@ namespace DiscordMusicBot.Services.Services.ExternalProcesses
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error during streaming: {ex.Message}.");
+                    Debug.Log($"Error during streaming: {ex.Message}.");
                 }
                 finally
                 {
@@ -114,7 +109,7 @@ namespace DiscordMusicBot.Services.Services.ExternalProcesses
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error during ffmpeg creation: {ex.Message}.");
+                Debug.Log($"Error during ffmpeg creation: {ex.Message}.");
             }
             finally
             {

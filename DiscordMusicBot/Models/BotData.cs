@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DiscordMusicBot.Models
+﻿namespace DiscordMusicBot.Models
 {
     [System.Serializable]
     public struct BotData

@@ -6,17 +6,13 @@ using DiscordMusicBot.Events;
 using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace DiscordMusicBot.Services.Services
 {
     internal class AudioManager : IServiceAudioManager
     {
+        private const int QUEUE_DISPLAY_LIMIT = 10;
         private IAudioClient? _audioClient;
         private Queue<SongData> _songDataQueue = new Queue<SongData>();
         private SongData _currentPlayingSong;
@@ -44,7 +40,6 @@ namespace DiscordMusicBot.Services.Services
                 Debug.Log($"'{videoUrl}' Invalid url.");
                 await command.RespondAsync(text: $"`{videoUrl}` is not a valid youtube url.", ephemeral: true);
             }
-
         }
 
         public async Task PlaySong(string title, string url)
@@ -88,11 +83,13 @@ namespace DiscordMusicBot.Services.Services
                 _songDataQueue.ToArray().CopyTo(songArr, 1);
             }
             var result = new StringBuilder();
-            result.AppendLine("* -- * -- Queued Songs -- * -- *");
+            result.AppendLine("* -- --  -- -- Queued Songs -- --  -- -- *");
             for (var i = 0; i < songArr.Length; i++)
             {
-                result.Append(i == 0 ? "Playing " : $"{i + 1}# ");
-                result.AppendLine(songArr[i].Title);
+                result.Append(i == 0 ? "Currently playing " : $"{i + 1}# ");
+                if (i == 0) result.AppendLine();
+                result.AppendLine(i == 0 ? $"- : {songArr[i].Title}\n" : songArr[i].Title);
+                if (i > QUEUE_DISPLAY_LIMIT) { result.AppendLine("------------------------ More Hidden ------------------------"); break; } 
             }
             await command.RespondAsync(text: $"{result}", ephemeral: true);
         }
@@ -139,6 +136,7 @@ namespace DiscordMusicBot.Services.Services
                 {
                     Debug.Log("Joined voice channel");
                     _audioClient = await voiceChannel.ConnectAsync();
+                    if (_songDataQueue.Count > 0 || Service.Get<IServiceFFmpeg>().IsSongPlaying) Service.Get<IServiceFFmpeg>().ForceClose();
                 }
                 catch (Exception ex)
                 {
@@ -146,6 +144,12 @@ namespace DiscordMusicBot.Services.Services
                 }
             }
         }
-
+        public async Task LeaveVoice(SocketSlashCommand command)
+        {
+            if (_audioClient == null) return;
+            await _audioClient.StopAsync();
+            _audioClient = null;
+            await command.RespondAsync(text: "Left voice channel.", ephemeral: true);
+        }
     }
 }

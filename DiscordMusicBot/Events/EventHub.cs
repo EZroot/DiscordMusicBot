@@ -1,14 +1,6 @@
 ﻿using DiscordMusicBot.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace DiscordMusicBot.Events
 {
-
-
     public static class EventHub
     {
         private static readonly Dictionary<Type, Delegate> eventDelegates = new Dictionary<Type, Delegate>();

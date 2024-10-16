@@ -4,9 +4,7 @@
     public struct AnalyticData
     {
         public List<SongAnlyticData> GlobalMostPlayedSongs;
-        public List<CommandAnalyticData> GlobalCommandUsage;
         public List<UserAnalyticData> UserAnalyticData;
-
         public SongData[] RecentSongHistory;
     }
 
