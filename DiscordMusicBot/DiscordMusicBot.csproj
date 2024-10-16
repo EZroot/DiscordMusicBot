@@ -5,7 +5,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <ApplicationIcon>Imgs\2b1b1cb5-2446-46d7-848e-e9c418b5de91.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Imgs\2b1b1cb5-2446-46d7-848e-e9c418b5de91.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Config\" />
