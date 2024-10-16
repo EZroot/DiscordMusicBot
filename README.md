@@ -26,6 +26,9 @@
 
 -   **.NET Core**
 -   **C# Compiler**
+-   **YTDLP**
+-   **FFMPEG**
+-   **libsodium.dll & opus.dll**
 
 > **Note:** If building for linux make sure to get the proper ytdlp to include in your build folder.
 
