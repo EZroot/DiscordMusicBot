@@ -40,20 +40,24 @@
 4. **Set your Guild (Server) ID** in `config.json` to register slash commands.
 5. **Run the bot!**
 
-## Bot Workflow 🌐
-
+## Bot Commands Workflow 🌐
 ```mermaid
-flowchart LR
-    A[User Sends Command] --> B{Bot Receives Command}
-    B --> C[Play an audio stream from YouTube using /play]
-    B --> D[Return search results from YouTube using /search]
-    B --> E[Change volume with /volume]
-    B --> F[Skip the current song with /skip]
-    B --> G[Display the current song queue with /queue]
-    B --> H[Display recent song history with /history]
-    B --> I[Display most played songs with /mostplayed]
-    B --> J[Leave the voice channel with /leave]
+flowchart TB
+    subgraph Session Commands
+        M["/leave"] --> N[Leave voice channel]
+    end
+    subgraph Info Commands
+        G["/queue"] --> H[Display the songs queued]
+        I["/mostplayed"] --> J[Display most played songs]
+        K["/history"] --> L[Display recent song history]
+    end
+		subgraph Playback Commands
+        A["/play <url>"] --> B[Play song based on YouTube URL]
+        C["/search <keyword>"] --> D[Search and display top YouTube results]
+        E["/skip"] --> F[Skip the current song]
+    end
 ```
+
 Support 📝
 
 If you encounter any issues with the bot, please consult the documentation or search online for solutions.
