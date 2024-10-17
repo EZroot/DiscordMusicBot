@@ -1,23 +1,14 @@
 #  <img src="https://raw.githubusercontent.com/EZroot/DiscordMusicBot/main/DiscordMusicBot/Imgs/2b1b1cb5-2446-46d7-848e-e9c418b5de91.webp" alt="drawing" width="64"/>  Discord Music Bot   <img src="https://raw.githubusercontent.com/EZroot/DiscordMusicBot/main/DiscordMusicBot/Imgs/2b1b1cb5-2446-46d7-848e-e9c418b5de91.webp" alt="drawing" width="64"/>
 
-- A non-intrusive Discord music bot for self-hosting.
+- A non-intrusive Discord Music Bot for simple self-hosting.
 - Very easy to setup!
 
 ## Latest Updates
 - **Release v0.2**
-- **Slash Commands:**
-  - `/play [url]` 	- Play an audio stream from YouTube by URL
-  - `/search [keyword]` - Return and display search results from YouTube by keywords
-  - `/volume [number]` 	- Change the volume from 0 - 100
-  - `/skip` 		- Skip the current song
-  - `/queue` 		- Display current song queue
-  - `/history` 		- Display recent song history
-  - `/mostplayed` 	- Display most played songs
-  - `/leave` 		- Leave voice
-
+  
 ## Prerequisites (Included in Releases (Exception: Ffmpeg))
-- **YTDLP**
-- **FFMPEG**
+- **Yt-dlp**
+- **Ffmpeg**
 - **libsodium.dll & opus.dll**
 
 > **Note:** If building for Linux, make sure to get the proper ytdlp to include in your build folder.
