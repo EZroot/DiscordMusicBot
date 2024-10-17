@@ -3,24 +3,24 @@
 - A non-intrusive Discord Music Bot for simple self-hosting.
 - Very easy to setup!
 
-## Latest Updates
+## ✨ Latest Updates
 - **Release v0.2**
   
-## Prerequisites (Included in Releases (Exception: Ffmpeg))
+## 🚧 Prerequisites (Included in Releases (Exception: Ffmpeg))
 - **Yt-dlp**
 - **Ffmpeg**
 - **libsodium.dll & opus.dll**
 
 > **Note:** If building for Linux, make sure to get the proper ytdlp to include in your build folder.
 
-## Installation
+## 🛠 Installation
 1. **Extract content in Release.zip**
 2. **Run DiscordModBot once to generate** the `config.json`.
 3. **Set your Discord API key** in `config.json`.
 4. **Set your Guild (Server) ID** in `config.json` to register slash commands.
 5. **Run the bot!**
 
-## Bot Commands Workflow 🌐
+## 🌐 Bot Commands Workflow
 ```mermaid
 flowchart TB
     subgraph Session Commands
@@ -38,9 +38,9 @@ flowchart TB
     end
 ```
 
-## Support 📝
+## 📝 Support 
 
 If you encounter any issues with the bot, please consult the documentation or search online for solutions.
 
-## Screenshots 📸
+## 📸 Screenshots 
 <img src="https://raw.githubusercontent.com/EZroot/DiscordMusicBot/refs/heads/main/DiscordMusicBot/Imgs/screenshot_01.png" alt="drawing"/> 
