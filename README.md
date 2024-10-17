@@ -58,8 +58,9 @@ flowchart TB
     end
 ```
 
-Support 📝
+## Support 📝
 
 If you encounter any issues with the bot, please consult the documentation or search online for solutions.
-Screenshots 📸
+
+## Screenshots 📸
 <img src="https://raw.githubusercontent.com/EZroot/DiscordMusicBot/refs/heads/main/DiscordMusicBot/Imgs/screenshot_01.png" alt="drawing"/> 
