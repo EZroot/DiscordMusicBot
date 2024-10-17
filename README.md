@@ -45,14 +45,14 @@
 ```mermaid
 flowchart LR
     A[User Sends Command] --> B{Bot Receives Command}
-    B --> |/play [url]| C[Play an audio stream from YouTube]
-    B --> |/search [keyword]| D[Return and display search results from YouTube]
-    B --> |/volume [number]| E[Change the volume from 0-100]
-    B --> |/skip| F[Skip the current song]
-    B --> |/queue| G[Display the current song queue]
-    B --> |/history| H[Display recent song history]
-    B --> |/mostplayed| I[Display most played songs]
-    B --> |/leave| J[Leave the voice channel]
+    B --> C[Play an audio stream from YouTube using /play]
+    B --> D[Return search results from YouTube using /search]
+    B --> E[Change volume with /volume]
+    B --> F[Skip the current song with /skip]
+    B --> G[Display the current song queue with /queue]
+    B --> H[Display recent song history with /history]
+    B --> I[Display most played songs with /mostplayed]
+    B --> J[Leave the voice channel with /leave]
 ```
 Support 📝
 
