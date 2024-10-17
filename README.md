@@ -43,14 +43,16 @@
 ## Bot Workflow 🌐
 
 ```mermaid
-flowchart TD
+flowchart LR
     A[User Sends Command] --> B{Bot Receives Command}
-    B --> C[Execute YouTube Search or Play Request]
-    C --> D[Play/Stream Song in Voice Channel]
-    D --> E[User Interacts with Commands]
-    E -->|/skip, /queue, etc.| F[Adjust Playback]
-    F --> G[Finish Playing]
-    G --> H[Bot Leaves Voice Channel]
+    B --> |/play [url]| C[Play an audio stream from YouTube]
+    B --> |/search [keyword]| D[Return and display search results from YouTube]
+    B --> |/volume [number]| E[Change the volume from 0-100]
+    B --> |/skip| F[Skip the current song]
+    B --> |/queue| G[Display the current song queue]
+    B --> |/history| H[Display recent song history]
+    B --> |/mostplayed| I[Display most played songs]
+    B --> |/leave| J[Leave the voice channel]
 ```
 Support 📝
 
