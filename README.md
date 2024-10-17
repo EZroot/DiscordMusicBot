@@ -1,7 +1,7 @@
 #  <img src="https://raw.githubusercontent.com/EZroot/DiscordMusicBot/main/DiscordMusicBot/Imgs/2b1b1cb5-2446-46d7-848e-e9c418b5de91.webp" alt="drawing" width="64"/>  Discord Music Bot   <img src="https://raw.githubusercontent.com/EZroot/DiscordMusicBot/main/DiscordMusicBot/Imgs/2b1b1cb5-2446-46d7-848e-e9c418b5de91.webp" alt="drawing" width="64"/>
 
 - A non-intrusive Discord music bot for self-hosting. 
-- Very easy to setup!
+- Very easy to setup! (Precompiled for Windows)
 ## Table of Contents
 
 -   [Latest Updates ✨](#latest-updates-)
