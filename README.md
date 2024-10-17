@@ -52,4 +52,4 @@ If you encounter any issues with the bot, please consult the documentation or se
 
 ## Screenshots 📸
 
-<img src="https://raw.githubusercontent.com/EZroot/DiscordMusicBot/refs/heads/main/DiscordMusicBot/Imgs/screenshot_01.png" alt="drawing" width="64"/>
+<img src="https://raw.githubusercontent.com/EZroot/DiscordMusicBot/refs/heads/main/DiscordMusicBot/Imgs/screenshot_01.png" alt="drawing"/>
