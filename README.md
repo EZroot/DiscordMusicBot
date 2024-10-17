@@ -41,10 +41,11 @@
 _Coming soon_
 
 ### Non-Docker 💪
-
-1.  **Set your Discord API key** in `config.json`.
-2.  **Set your Guild ID** in `config.json` to register slash commands.
-3.  **Run the bot!**
+1. **Extract content in Release.zip**
+2.  **Run DiscordModBot once to generate** the `config.json`.
+3.  **Set your Discord API key** in `config.json`.
+4.  **Set your Guild (Server) ID** in `config.json` to register slash commands.
+5.  **Run the bot!**
 
 ## Support 📝
 
