@@ -6,5 +6,7 @@
         public string ApiKey;
         public string EnvPath;
         public string GuildId; 
+        public string[] CustomStatus;
+        public bool DebugMode;
     }
 }

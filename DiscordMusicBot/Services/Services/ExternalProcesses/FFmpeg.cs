@@ -48,7 +48,7 @@ namespace DiscordMusicBot.Services.Services.ExternalProcesses
                     while ((line = await process.StandardError.ReadLineAsync()) != null)
                     {
                         //Ignore errors to avoid console spam
-                        //Debug.Log($"FFMPEG:> <color=yellow>{line}</color>");
+                        Debug.Log($"FFMPEG:> <color=yellow>{line}</color>");
                     }
                 }
                 catch (Exception ex)

@@ -53,18 +53,23 @@ namespace DiscordMusicBot.Services.Services
             var config = JsonConvert.DeserializeObject<BotData>(json);
             var apiKey = config.ApiKey;//Environment.GetEnvironmentVariable(config.EnvPath);
             var guildId = config.GuildId;
+            var motto = config.CustomStatus;
+            var debugMode = config.DebugMode;
 
-            if (!string.IsNullOrEmpty(apiKey)) return new BotData { ApiKey = apiKey, GuildId = guildId };
+            if (!string.IsNullOrEmpty(apiKey)) return new BotData { ApiKey = apiKey, GuildId = guildId, CustomStatus = motto, DebugMode = debugMode };
             return config;
         }
 
         private void CreateDefaultConfig()
         {
+            var motto = new string[] {"Just chillaxin...", "Thinking about life..", "Pondering the universe", "Waiting for AI Overlords."};
             var defaultConfig = new BotData
             {
                 ApiKey = "Replace me",
                 EnvPath = "API_KEY",
-                GuildId = "Replace me with server id"
+                GuildId = "Replace me with server id",
+                CustomStatus = motto,
+                DebugMode = false
             };
 
             try
@@ -77,8 +82,12 @@ namespace DiscordMusicBot.Services.Services
                 Debug.Log($"Error during serialization: {ex.Message}");
             }
 
-
-            Debug.Log("config.json created! Please exit the bot and fill in your discord bot api key and guild id (server id)");
+            Debug.Log("<color=green>config.json</color> created! <color=white>Please exit the bot and fill in your discord bot api key and guild id (server id).");
+            Debug.Log("GuildId -> Right click your discord server 'Copy Server Id'");
+            Debug.Log("ApiKey -> Sign in to https://discord.com/developers,  go to 'Bot' tab, Reset & Copy <color=white>Token");
+            Debug.Log("<color=white>Example:");
+            Debug.Log("\t\tApiKey	'MjY5NzcY5NMjY5NzcYMjY5Nzc.MjY5Nzc.MjY5NzcjY5NzcMjY5Nzc-ozWf2JDfLVtKGUK3rXQz'");
+            Debug.Log("\t\tGuildId	'308708637679812608'");
             Console.Read();
             
         }

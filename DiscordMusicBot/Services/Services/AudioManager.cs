@@ -30,7 +30,7 @@ namespace DiscordMusicBot.Services.Services
             {
                 await command.RespondAsync(text: $"Searching: `{videoUrl}`", ephemeral: true);
                 string title = await Service.Get<IServiceYtdlp>().GetSongTitle(videoUrl);
-                await Service.Get<IServiceAnalytics>().AddSongAnalytics(user, new SongData { Title = title, Url = videoUrl });
+                // await Service.Get<IServiceAnalytics>().AddSongAnalytics(user, new SongData { Title = title, Url = videoUrl });
                 await command.ModifyOriginalResponseAsync((m) => m.Content = $"Added **{title}** to Queue!");
                 await PlaySong(title, videoUrl);
                 return;

@@ -13,28 +13,8 @@ namespace DiscordMusicBot.Services.Services
     {
         private DiscordSocketClient? _client;
         public DiscordSocketClient? Client => _client;
-
         public async Task Initialize()
         {
-            EventHub.Subscribe<EvOnFFmpegExit>((a) =>
-            {
-                if (Service.Get<IServiceAudioManager>().SongCount > 0) return;
-                Task.Run(async () =>
-                {
-                    if (_client == null) return;
-                    await _client.SetCustomStatusAsync("Chillin...");
-                });
-            });
-
-            EventHub.Subscribe<EvOnPlayNextSong>((a) =>
-            {
-                Task.Run(async () =>
-                {
-                    if (_client == null) return;
-                    await _client.SetCustomStatusAsync($"Playin '{a.Title}'");
-                });
-            });
-
             _client = new DiscordSocketClient(new DiscordSocketConfig
             {
                 GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildVoiceStates
@@ -46,9 +26,12 @@ namespace DiscordMusicBot.Services.Services
 
             await Service.Get<IServiceAnalytics>().Initialize();
             var botData = Service.Get<IServiceDataManager>().LoadConfig();
+
+            SubscribeToEvents(botData);
+
             await _client.LoginAsync(TokenType.Bot, botData.ApiKey);
             await _client.StartAsync();
-            await _client.SetCustomStatusAsync("Thinking about life.");
+            await _client.SetCustomStatusAsync(GetRandomMotto(botData));
             // Block this task
             await Task.Delay(-1);
         }
@@ -62,7 +45,7 @@ namespace DiscordMusicBot.Services.Services
             var guild = _client?.GetGuild(guildId);
 
             // - Clear all server slash commands ---
-            //await SlashCommandClear(guild); 
+            // await SlashCommandClear(guild); 
             // -------------------------------------------------
 
             if (guild != null) await Service.Get<IServiceCommandManager>().RegisterAllCommands(guild);
@@ -117,9 +100,10 @@ namespace DiscordMusicBot.Services.Services
                             await Service.Get<IServiceAudioManager>().PlaySong(results[i].Title, results[i].Url);
                         });
                         await message.ModifyAsync((m) => m.Content = $"Adding {results[i].Title} to Queue");
-                        await Service.Get<IServiceAnalytics>().AddSongAnalytics(user.Username, new SongData { Title = results[i].Title, Url = results[i].Url });
-
+                        // await Service.Get<IServiceAnalytics>().AddSongAnalytics(user.Username, new SongData { Title = results[i].Title, Url = results[i].Url });
+                        // Debug.Log("Deleting message... (5000ms)");
                         await Task.Delay(5000);
+                        // Debug.Log("DEBUG: should now delete message!");
                         await message.DeleteAsync();
                     }
                 }
@@ -132,6 +116,37 @@ namespace DiscordMusicBot.Services.Services
             colorTag = msg.Severity == LogSeverity.Warning ? "yellow" : colorTag;
             Debug.Log($"<color={colorTag}>{msg.ToString()}</color>");
             return Task.CompletedTask;
+        }
+        
+        private void SubscribeToEvents(BotData data)
+        {
+            EventHub.Subscribe<EvOnFFmpegExit>((a) =>
+            {
+                if (Service.Get<IServiceAudioManager>().SongCount > 0) return;
+                Task.Run(async () =>
+                {
+                    if (_client == null) return;
+                    await _client.SetCustomStatusAsync(GetRandomMotto(data));
+                });
+            });
+
+            EventHub.Subscribe<EvOnPlayNextSong>((a) =>
+            {
+                Debug.Log("Event played EvOnPlayNextSong!");
+
+                Task.Run(async () =>
+                {
+                    Debug.Log("EvOnPlayNextSong! Tryin to show song playing");
+                    if (_client == null) return;
+                    await _client.SetCustomStatusAsync($"Playin '{a.Title}'");
+                });
+            });
+        }
+
+        private void UnsubscribeToEvents()
+        {
+            EventHub.Unsubscribe<EvOnFFmpegExit>((a)=>{ Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
+            EventHub.Unsubscribe<EvOnPlayNextSong>((a)=>{ Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
         }
 
         private string GetUnicodeCodePoints(string input)
@@ -149,6 +164,23 @@ namespace DiscordMusicBot.Services.Services
             }
 
             return result;
+        }
+
+        private string GetRandomMotto(BotData botData)
+        {
+            var specialMotto = "";
+            if (DateTime.Now.Month == 12) specialMotto = "Merry Christmas!"; //december
+            if (DateTime.Now.Month == 1) specialMotto = "Happy new year!"; //january
+            if (DateTime.Now.Month == 10) specialMotto = "Spooky scary skeletons!";  //october
+
+            var motto = new string[botData.CustomStatus.Length+1];
+            for(var i = 0; i < motto.Length; i++)
+            {
+                if(i >= botData.CustomStatus.Length) break;
+                motto[i] = botData.CustomStatus[i];
+            }
+            motto[motto.Length-1] = specialMotto;
+            return motto[Random.Shared.Next(motto.Length)];
         }
 
         private async Task SlashCommandClear(SocketGuild guild)
