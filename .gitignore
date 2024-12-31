@@ -9,6 +9,8 @@
 *.userosscache
 *.sln.docstates
 
+[Pp]ublish/
+publish.zip
 ## Mono auto generated files ##
 mono_crash.*
 
