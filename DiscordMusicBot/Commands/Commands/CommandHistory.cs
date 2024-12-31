@@ -23,13 +23,10 @@ namespace DiscordMusicBot.Commands.Commands
 
         public async Task ExecuteAsync(SocketSlashCommand command)
         {
-            Utils.Debug.Log($"Trying to show history...");
             var analytics = Service.Get<IServiceAnalytics>();
             var recentHistory = analytics.AnalyticData.RecentSongHistory;
-            Utils.Debug.Log($"Got recent history");
             if (recentHistory == null || recentHistory.Length == 0)
             {
-                Utils.Debug.Log($"NO SONGS");
                 await command.RespondAsync(text: $"There are no songs in recent history.", ephemeral: true);
                 return;
             }
@@ -41,7 +38,7 @@ namespace DiscordMusicBot.Commands.Commands
 
                 try
                 {
-                    var title = $"{recentHistory[i].Title} {recentHistory[i].Url.Insert(5, "\u200B")}";
+                    var title = $"{recentHistory[i].Title} \t\t ({recentHistory[i].Url.Insert(5, "\u200B")})";
                     if (title != null && title != "null")
                         displayText.AppendLine($"{i}#   {title}");
                 }

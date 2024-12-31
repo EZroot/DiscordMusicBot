@@ -49,6 +49,7 @@ namespace DiscordMusicBot.Services.Managers
             if (_songDataQueue.Count == 1 && !Service.Get<IServiceFFmpeg>().IsSongPlaying)
             {
                 _currentPlayingSong = _songDataQueue.Dequeue();
+                EventHub.Raise(new EvOnPlayNextSong() { Title = _currentPlayingSong.Title, Url = _currentPlayingSong.Url });
             }
             Debug.Log($"Added song: <color=cyan>{title}</color> <color=magenta>{url}</color> to queue.");
             await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, url);

@@ -13,6 +13,7 @@ namespace DiscordMusicBot.Services.Managers
     {
         private DiscordSocketClient? _client;
         private BotData _botData;
+        private BotTimer _botTimer;
         public DiscordSocketClient? Client => _client;
         public async Task Initialize()
         {
@@ -27,12 +28,14 @@ namespace DiscordMusicBot.Services.Managers
             _client.Connected += SubscribeToEvents;
             _client.Disconnected += UnsubscribeToEvents;
 
+            _botTimer = new BotTimer(60000);
             await Service.Get<IServiceAnalytics>().Initialize();
             _botData = Service.Get<IServiceDataManager>().LoadConfig();
 
             await _client.LoginAsync(TokenType.Bot, _botData.ApiKey);
             await _client.StartAsync();
-            await _client.SetCustomStatusAsync(GetRandomMotto(_botData));
+
+            await UpdateBotStatus();
 
             // Block this task
             await Task.Delay(-1);
@@ -120,13 +123,23 @@ namespace DiscordMusicBot.Services.Managers
         
         private async Task SubscribeToEvents()
         {
+            EventHub.Subscribe<EvOnTimerLoop>((a) =>
+            {
+                Task.Run(async () =>
+                {
+                    if (_client == null) return;
+                    if(Service.Get<IServiceFFmpeg>().IsSongPlaying) return;
+                    await UpdateBotStatus();
+                });
+            });
+
             EventHub.Subscribe<EvOnFFmpegExit>((a) =>
             {
                 if (Service.Get<IServiceAudioManager>().SongCount > 0) return;
                 Task.Run(async () =>
                 {
                     if (_client == null) return;
-                    await _client.SetCustomStatusAsync(GetRandomMotto(_botData));
+                    await UpdateBotStatus();
                 });
             });
 
@@ -148,6 +161,14 @@ namespace DiscordMusicBot.Services.Managers
             EventHub.Unsubscribe<EvOnFFmpegExit>((a)=>{ Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
             EventHub.Unsubscribe<EvOnPlayNextSong>((a)=>{ Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
             await Task.CompletedTask;
+        }
+
+        private async Task UpdateBotStatus()
+        {
+            // var currentTime = DateTime.Now.ToString("h:mmtt");
+            // currentTime = currentTime.Replace(".", "");
+            // await _client.SetCustomStatusAsync($"[{currentTime}] {GetRandomMotto(_botData)}");
+            await _client.SetCustomStatusAsync($"{GetRandomMotto(_botData)}");
         }
 
         private string GetUnicodeCodePoints(string input)
