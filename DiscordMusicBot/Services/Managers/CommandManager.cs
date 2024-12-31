@@ -5,7 +5,7 @@ using Discord.WebSocket;
 using System.Reflection;
 using DiscordMusicBot.Utils;
 
-namespace DiscordMusicBot.Services.Services
+namespace DiscordMusicBot.Services.Managers
 {
     internal class CommandManager : IServiceCommandManager
     {

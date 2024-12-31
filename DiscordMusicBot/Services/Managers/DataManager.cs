@@ -3,7 +3,7 @@ using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 using Newtonsoft.Json;
 
-namespace DiscordMusicBot.Services.Services
+namespace DiscordMusicBot.Services.Managers
 {
     internal class DataManager : IServiceDataManager
     {

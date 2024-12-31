@@ -4,7 +4,7 @@ using DiscordMusicBot.Services.Interfaces;
 using System.Diagnostics;
 using Debug = DiscordMusicBot.Utils.Debug;
 
-namespace DiscordMusicBot.Services.Services.ExternalProcesses
+namespace DiscordMusicBot.Services.Managers.ExternalProcesses
 {
     internal class Ytdlp : IServiceYtdlp
     {

@@ -7,11 +7,12 @@ using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 using System.Globalization;
 
-namespace DiscordMusicBot.Services.Services
+namespace DiscordMusicBot.Services.Managers
 {
     internal class BotManager : IServiceBotManager
     {
         private DiscordSocketClient? _client;
+        private BotData _botData;
         public DiscordSocketClient? Client => _client;
         public async Task Initialize()
         {
@@ -23,19 +24,20 @@ namespace DiscordMusicBot.Services.Services
             _client.Log += Ev_Log;
             _client.Ready += Ev_ClientReady;
             _client.ReactionAdded += Ev_ReactionAddedAsync;
+            _client.Connected += SubscribeToEvents;
+            _client.Disconnected += UnsubscribeToEvents;
 
             await Service.Get<IServiceAnalytics>().Initialize();
-            var botData = Service.Get<IServiceDataManager>().LoadConfig();
+            _botData = Service.Get<IServiceDataManager>().LoadConfig();
 
-            SubscribeToEvents(botData);
-
-            await _client.LoginAsync(TokenType.Bot, botData.ApiKey);
+            await _client.LoginAsync(TokenType.Bot, _botData.ApiKey);
             await _client.StartAsync();
-            await _client.SetCustomStatusAsync(GetRandomMotto(botData));
+            await _client.SetCustomStatusAsync(GetRandomMotto(_botData));
+
             // Block this task
             await Task.Delay(-1);
         }
-         
+
         private async Task Ev_ClientReady()
         {
             // Ensure you have the correct guild ID (Replace it with your server id)
@@ -45,7 +47,7 @@ namespace DiscordMusicBot.Services.Services
             var guild = _client?.GetGuild(guildId);
 
             // - Clear all server slash commands ---
-            // await SlashCommandClear(guild); 
+            //  await SlashCommandClear(guild); 
             // -------------------------------------------------
 
             if (guild != null) await Service.Get<IServiceCommandManager>().RegisterAllCommands(guild);
@@ -100,10 +102,8 @@ namespace DiscordMusicBot.Services.Services
                             await Service.Get<IServiceAudioManager>().PlaySong(results[i].Title, results[i].Url);
                         });
                         await message.ModifyAsync((m) => m.Content = $"Adding {results[i].Title} to Queue");
-                        // await Service.Get<IServiceAnalytics>().AddSongAnalytics(user.Username, new SongData { Title = results[i].Title, Url = results[i].Url });
-                        // Debug.Log("Deleting message... (5000ms)");
-                        await Task.Delay(5000);
-                        // Debug.Log("DEBUG: should now delete message!");
+                        await Service.Get<IServiceAnalytics>().AddSongAnalytics(user.Username, new SongData { Title = results[i].Title, Url = results[i].Url });
+                        await Task.Delay(5000); 
                         await message.DeleteAsync();
                     }
                 }
@@ -118,7 +118,7 @@ namespace DiscordMusicBot.Services.Services
             return Task.CompletedTask;
         }
         
-        private void SubscribeToEvents(BotData data)
+        private async Task SubscribeToEvents()
         {
             EventHub.Subscribe<EvOnFFmpegExit>((a) =>
             {
@@ -126,27 +126,28 @@ namespace DiscordMusicBot.Services.Services
                 Task.Run(async () =>
                 {
                     if (_client == null) return;
-                    await _client.SetCustomStatusAsync(GetRandomMotto(data));
+                    await _client.SetCustomStatusAsync(GetRandomMotto(_botData));
                 });
             });
 
             EventHub.Subscribe<EvOnPlayNextSong>((a) =>
             {
-                Debug.Log("Event played EvOnPlayNextSong!");
-
                 Task.Run(async () =>
                 {
-                    Debug.Log("EvOnPlayNextSong! Tryin to show song playing");
+                    Debug.Log("EvOnPlayNextSong! Updating status song playing");
                     if (_client == null) return;
                     await _client.SetCustomStatusAsync($"Playin '{a.Title}'");
                 });
             });
+
+            await Task.CompletedTask;
         }
 
-        private void UnsubscribeToEvents()
+        private async Task UnsubscribeToEvents(Exception exception)
         {
             EventHub.Unsubscribe<EvOnFFmpegExit>((a)=>{ Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
             EventHub.Unsubscribe<EvOnPlayNextSong>((a)=>{ Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
+            await Task.CompletedTask;
         }
 
         private string GetUnicodeCodePoints(string input)

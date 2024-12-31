@@ -5,7 +5,7 @@ using DiscordMusicBot.Services.Interfaces;
 using System.Diagnostics;
 using Debug = DiscordMusicBot.Utils.Debug;
 
-namespace DiscordMusicBot.Services.Services.ExternalProcesses
+namespace DiscordMusicBot.Services.Managers.ExternalProcesses
 {
     internal class FFmpeg : IServiceFFmpeg
     {
@@ -20,6 +20,7 @@ namespace DiscordMusicBot.Services.Services.ExternalProcesses
         {
             Debug.Log($"Volume set: {_volume} -> {newVolume} ");
             _volume = newVolume;
+            await Task.CompletedTask;
         }
 
         public Process CreateStream(string url)

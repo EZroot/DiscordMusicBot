@@ -30,10 +30,9 @@ namespace DiscordMusicBot.Commands.Commands
             }
             var displayText = new StringBuilder();
             displayText.AppendLine("* -- --  -- -- Most Played Songs -- --  -- -- *");
-            displayText.AppendLine("* # Of Plays  -- --  -- --  -- -- -- -- -- Title  -- --  -- -- *");
             for (var i = 0; i < mostPlayedHistory.Count; i++)
             {
-                var title = mostPlayedHistory[i].SongData.Title;
+                var title = $"{mostPlayedHistory[i].SongData.Title} {mostPlayedHistory[i].SongData.Url.Insert(5, "\u200B")}";
                 var num = mostPlayedHistory[i].NumberOfPlays;
                 displayText.AppendLine($"[{num}]    {title}");
             }

@@ -1,7 +1,7 @@
 ﻿namespace DiscordMusicBot.Models
 {
     [System.Serializable]
-    public struct AnalyticData
+    public class AnalyticData
     {
         public List<SongAnlyticData> GlobalMostPlayedSongs;
         public List<UserAnalyticData> UserAnalyticData;
@@ -9,21 +9,22 @@
     }
 
     [System.Serializable]
-    public struct UserAnalyticData
+    public class UserAnalyticData
     {
         public string UserName;
-        public List<SongAnlyticData> SongHistory;
+        public List<SongAnlyticData> SongHistory = new List<SongAnlyticData>();
     }
 
+
     [System.Serializable]
-    public struct SongAnlyticData
+    public class SongAnlyticData
     {
         public int NumberOfPlays;
         public SongData SongData;
     }
 
     [System.Serializable]
-    public struct CommandAnalyticData
+    public class CommandAnalyticData
     {
         public int NumberOfUses;
         public string CommandName;
