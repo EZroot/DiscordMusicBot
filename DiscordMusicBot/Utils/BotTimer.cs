@@ -18,7 +18,6 @@ namespace DiscordMusicBot.Utils
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
-            Utils.Debug.Log("Timer event called!");
             EventHub.Raise(new EvOnTimerLoop());
         }
     }
