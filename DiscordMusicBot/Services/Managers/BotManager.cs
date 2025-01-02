@@ -27,6 +27,7 @@ namespace DiscordMusicBot.Services.Managers
             _client.ReactionAdded += Ev_ReactionAddedAsync;
             _client.Connected += SubscribeToEvents;
             _client.Disconnected += UnsubscribeToEvents;
+            _client.ButtonExecuted += Ev_ButtonExecutedAsync;
 
             _botTimer = new BotTimer(60000);
             await Service.Get<IServiceAnalytics>().Initialize();
@@ -50,11 +51,11 @@ namespace DiscordMusicBot.Services.Managers
             var guild = _client?.GetGuild(guildId);
 
             // - Clear all server slash commands ---
-            //  await SlashCommandClear(guild); 
+             await SlashCommandClear(guild); 
             // -------------------------------------------------
 
-            if (guild != null) await Service.Get<IServiceCommandManager>().RegisterAllCommands(guild);
-            if(_client != null) _client.SlashCommandExecuted += Ev_SlashCommandHandler;
+            // if (guild != null) await Service.Get<IServiceCommandManager>().RegisterAllCommands(guild);
+            // if (_client != null) _client.SlashCommandExecuted += Ev_SlashCommandHandler;
         }
 
         private async Task Ev_SlashCommandHandler(SocketSlashCommand command)
@@ -65,10 +66,53 @@ namespace DiscordMusicBot.Services.Managers
             });
         }
 
+        private async Task Ev_ButtonExecutedAsync(SocketMessageComponent component)
+        {
+            await component.Message.DeleteAsync();
+
+            var user = component.User;
+            var index = 0;
+            switch (component.Data.CustomId)
+            {
+                case "press_0":
+                    index = 0;
+                    break;
+                case "press_1":
+                    index = 1;
+                    break;
+                case "press_2":
+                    index = 2;
+                    break;
+                case "press_3":
+                    index = 3;
+                    break;
+                case "press_4":
+                    index = 4;
+                    break;
+                case "press_5":
+                    index = 5;
+                    break;
+            }
+            var results = Service.Get<IServiceYtdlp>().SearchResults;
+            await component.RespondAsync($"Selected {results[index].Title}");
+
+            Debug.Log($"<color=red>{user.Username}</color> <color=white>picked song</color> <color=cyan>{index}#</color>");
+            _ = Task.Run(async () =>
+            {
+                await Service.Get<IServiceAudioManager>().PlaySong(results[index].Title, results[index].Url);
+            });
+
+            var msg = await component.ModifyOriginalResponseAsync((m) => m.Content = $"Adding {results[index].Title} to Queue");
+            await Service.Get<IServiceAnalytics>().AddSongAnalytics(user.Username, new SongData { Title = results[index].Title, Url = results[index].Url });
+            await Task.Delay(1000); //This can be a problem with gateway task blocking
+            await msg.DeleteAsync();
+        }
+
         private async Task Ev_ReactionAddedAsync(Cacheable<IUserMessage, ulong> cacheable, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
             var message = await cacheable.GetOrDownloadAsync();
-            if (message == null) return;
+            if (message == null || message.Author.Id != _client.CurrentUser.Id) return;
+
             _ = Task.Run(async () =>
             {
                 string[] _numberEmojis = new string[]
@@ -106,7 +150,7 @@ namespace DiscordMusicBot.Services.Managers
                         });
                         await message.ModifyAsync((m) => m.Content = $"Adding {results[i].Title} to Queue");
                         await Service.Get<IServiceAnalytics>().AddSongAnalytics(user.Username, new SongData { Title = results[i].Title, Url = results[i].Url });
-                        await Task.Delay(5000); 
+                        await Task.Delay(5000);
                         await message.DeleteAsync();
                     }
                 }
@@ -120,7 +164,7 @@ namespace DiscordMusicBot.Services.Managers
             Debug.Log($"<color={colorTag}>{msg.ToString()}</color>");
             return Task.CompletedTask;
         }
-        
+
         private async Task SubscribeToEvents()
         {
             EventHub.Subscribe<EvOnTimerLoop>((a) =>
@@ -128,7 +172,7 @@ namespace DiscordMusicBot.Services.Managers
                 Task.Run(async () =>
                 {
                     if (_client == null) return;
-                    if(Service.Get<IServiceFFmpeg>().IsSongPlaying) return;
+                    if (Service.Get<IServiceFFmpeg>().IsSongPlaying) return;
                     await UpdateBotStatus();
                 });
             });
@@ -158,8 +202,8 @@ namespace DiscordMusicBot.Services.Managers
 
         private async Task UnsubscribeToEvents(Exception exception)
         {
-            EventHub.Unsubscribe<EvOnFFmpegExit>((a)=>{ Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
-            EventHub.Unsubscribe<EvOnPlayNextSong>((a)=>{ Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
+            EventHub.Unsubscribe<EvOnFFmpegExit>((a) => { Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
+            EventHub.Unsubscribe<EvOnPlayNextSong>((a) => { Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
             await Task.CompletedTask;
         }
 
@@ -195,13 +239,13 @@ namespace DiscordMusicBot.Services.Managers
             if (DateTime.Now.Month == 1) specialMotto = "Happy new year!"; //january
             if (DateTime.Now.Month == 10) specialMotto = "Spooky scary skeletons!";  //october
 
-            var motto = new string[botData.CustomStatus.Length+1];
-            for(var i = 0; i < motto.Length; i++)
+            var motto = new string[botData.CustomStatus.Length + 1];
+            for (var i = 0; i < motto.Length; i++)
             {
-                if(i >= botData.CustomStatus.Length) break;
+                if (i >= botData.CustomStatus.Length) break;
                 motto[i] = botData.CustomStatus[i];
             }
-            motto[motto.Length-1] = specialMotto;
+            motto[motto.Length - 1] = specialMotto;
             return motto[Random.Shared.Next(motto.Length)];
         }
 

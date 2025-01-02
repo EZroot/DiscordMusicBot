@@ -51,19 +51,40 @@ namespace DiscordMusicBot.Commands.Commands
             {
                 var r = result[i];
                 var title = r.Title;
-                if (title.Length > 64) title = title.Substring(0, 64); 
+                if (title.Length > 64) title = title.Substring(0, 64);
                 message += $"{i}# {title}\n";
             }
             message += "```";
-            var messageList = await command.ModifyOriginalResponseAsync((m) => m.Content = message);
 
-            //Use this for custom emojis
-            //var emojiIds = new ulong[] { 429753831199342592, 466478794367041557, 466477774455177247, 582418378178822144 };
+
+            var buttonBuilder = new ComponentBuilder();
+
+            // Add buttons for each emoji in the array
             for (int i = 0; i < result.Count; i++)
             {
-                //var emote = Emote.Parse($"<:warrior{i}:{emojiIds[i]}>");
-                await messageList.AddReactionAsync(new Emoji(_numberEmojis[i]));
+                string? emoji = _numberEmojis[i];
+                // Determine button style based on the emoji for demonstration (customize as needed)
+                ButtonStyle style = ButtonStyle.Secondary;
+
+                // Create each button with the emoji as the label and custom ID
+                buttonBuilder.WithButton(
+                    // label: new Emoji(emoji).Name,   // Use the emoji itself as a label
+                    customId: "press_" + i,     // Unique custom ID for each button
+                    style: style,                   // Style based on the emoji
+                    emote: new Emoji(emoji)         // The actual emoji displayed on the button
+                );
             }
+
+            //Use this for custom emojis
+            // //var emojiIds = new ulong[] { 429753831199342592, 466478794367041557, 466477774455177247, 582418378178822144 };
+            // for (int i = 0; i < result.Count; i++)
+            // {
+
+            //     //var emote = Emote.Parse($"<:warrior{i}:{emojiIds[i]}>");
+            //     // await messageList.AddReactionAsync(new Emoji(_numberEmojis[i]));
+            // }
+
+            var messageList = await command.ModifyOriginalResponseAsync((m) => { m.Content = message; m.Components = buttonBuilder.Build(); } );
         }
     }
 }
