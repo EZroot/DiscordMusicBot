@@ -51,11 +51,11 @@ namespace DiscordMusicBot.Services.Managers
             var guild = _client?.GetGuild(guildId);
 
             // - Clear all server slash commands ---
-             await SlashCommandClear(guild); 
+            // await SlashCommandClear(guild); 
             // -------------------------------------------------
 
-            // if (guild != null) await Service.Get<IServiceCommandManager>().RegisterAllCommands(guild);
-            // if (_client != null) _client.SlashCommandExecuted += Ev_SlashCommandHandler;
+            if (guild != null) await Service.Get<IServiceCommandManager>().RegisterAllCommands(guild);
+            if (_client != null) _client.SlashCommandExecuted += Ev_SlashCommandHandler;
         }
 
         private async Task Ev_SlashCommandHandler(SocketSlashCommand command)
