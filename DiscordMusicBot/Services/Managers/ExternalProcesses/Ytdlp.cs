@@ -8,13 +8,14 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
 {
     internal class Ytdlp : IServiceYtdlp
     {
-        private List<SongData>? _searchResults;
-        private bool _resultsReady;
-
+        private List<SongData> _searchResults = new List<SongData>();
         public List<SongData> SearchResults => _searchResults;
+
+        private List<SongData> _searchResultsHistory = new List<SongData>();
+        public List<SongData> SearchResultsHistory => _searchResultsHistory;
+        
         public async Task<List<SongData>>? SearchYoutube(string query, int maxResults = 5)
         {
-            _searchResults = new List<SongData>();
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -41,6 +42,8 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
                     return _searchResults;
                 }
 
+                _searchResults.Clear();
+
                 string[] lines = output.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
                 for (int i = 0; i < lines.Length; i += 3)
@@ -57,12 +60,17 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
                         double.TryParse(duration, out double dduration);
 
                         var durationResult = dduration / 60d;
-                        _searchResults.Add(new SongData
+
+                        var foundSong = new SongData
                         {
+                            Id = Guid.NewGuid().ToString(),
                             Title = title,
                             Url = url,
                             Length = durationResult.ToString("0.00")
-                        });
+                        };
+                        
+                        _searchResults.Add(foundSong);
+                        _searchResultsHistory.Add(foundSong);
                     }
                     else
                     {

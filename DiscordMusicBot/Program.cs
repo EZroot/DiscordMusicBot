@@ -1,5 +1,4 @@
-﻿//public class Program
-using DiscordMusicBot.Services;
+﻿using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
 
 public class Program

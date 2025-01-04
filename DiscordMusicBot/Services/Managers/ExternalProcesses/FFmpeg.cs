@@ -1,6 +1,6 @@
 ﻿using Discord.Audio;
 using DiscordMusicBot.Events;
-using DiscordMusicBot.Events.Events;
+using DiscordMusicBot.Events.EventArgs;
 using DiscordMusicBot.Services.Interfaces;
 using System.Diagnostics;
 using Debug = DiscordMusicBot.Utils.Debug;

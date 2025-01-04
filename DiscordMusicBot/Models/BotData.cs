@@ -7,6 +7,7 @@
         public string EnvPath;
         public string GuildId; 
         public string[] CustomStatus;
+        public Dictionary<int,string> SearchResultButtonEmojis;
         public bool DebugMode;
     }
 }

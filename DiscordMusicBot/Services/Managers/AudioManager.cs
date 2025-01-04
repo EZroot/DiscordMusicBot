@@ -1,7 +1,7 @@
 ﻿using Discord;
 using Discord.Audio;
 using Discord.WebSocket;
-using DiscordMusicBot.Events.Events;
+using DiscordMusicBot.Events.EventArgs;
 using DiscordMusicBot.Events;
 using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
@@ -45,7 +45,6 @@ namespace DiscordMusicBot.Services.Managers
         public async Task PlaySong(string title, string url)
         {
             _songDataQueue.Enqueue(new SongData { Title = title, Url = url });
-            //await PlayNextSong(_audioClient);
             if (_songDataQueue.Count == 1 && !Service.Get<IServiceFFmpeg>().IsSongPlaying)
             {
                 _currentPlayingSong = _songDataQueue.Dequeue();

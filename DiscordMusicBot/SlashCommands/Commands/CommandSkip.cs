@@ -1,10 +1,10 @@
 ﻿using Discord.WebSocket;
-using DiscordMusicBot.Commands.Interfaces;
+using DiscordMusicBot.SlashCommands.Interfaces;
 using Discord;
 using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
 
-namespace DiscordMusicBot.Commands.Commands
+namespace DiscordMusicBot.SlashCommands.Commands
 {
     internal class CommandSkip : IDiscordCommand
     {

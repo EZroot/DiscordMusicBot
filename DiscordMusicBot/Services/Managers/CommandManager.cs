@@ -1,9 +1,9 @@
-﻿using DiscordMusicBot.Commands.Interfaces;
-using DiscordMusicBot.Services.Interfaces;
+﻿using DiscordMusicBot.Services.Interfaces;
 using Discord;
 using Discord.WebSocket;
 using System.Reflection;
 using DiscordMusicBot.Utils;
+using DiscordMusicBot.SlashCommands.Interfaces;
 
 namespace DiscordMusicBot.Services.Managers
 {

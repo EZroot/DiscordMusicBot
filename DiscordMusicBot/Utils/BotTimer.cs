@@ -1,7 +1,7 @@
 
 using System.Timers;
 using DiscordMusicBot.Events;
-using DiscordMusicBot.Events.Events;
+using DiscordMusicBot.Events.EventArgs;
 
 namespace DiscordMusicBot.Utils
 {

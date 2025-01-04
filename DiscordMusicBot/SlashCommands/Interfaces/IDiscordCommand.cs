@@ -1,7 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 
-namespace DiscordMusicBot.Commands.Interfaces
+namespace DiscordMusicBot.SlashCommands.Interfaces
 {
     internal interface IDiscordCommand
     {

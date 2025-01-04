@@ -1,13 +1,11 @@
 ﻿using Discord.WebSocket;
 using Discord;
-using DiscordMusicBot.Commands.Interfaces;
+using DiscordMusicBot.SlashCommands.Interfaces;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Services;
-using System;
 using System.Text;
-using System.Diagnostics;
 
-namespace DiscordMusicBot.Commands.Commands
+namespace DiscordMusicBot.SlashCommands.Commands
 {
     internal class CommandHistory : IDiscordCommand
     {

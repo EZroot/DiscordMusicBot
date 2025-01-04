@@ -4,7 +4,7 @@ namespace DiscordMusicBot.Services.Interfaces
     internal interface IServiceAnalytics : IService
     {
         AnalyticData AnalyticData { get; }
-        Task Initialize();
+        Task InitializeAsync();
         Task AddSongAnalytics(string userName, SongData songData);
     }
 }

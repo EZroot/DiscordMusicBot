@@ -1,11 +1,11 @@
 ﻿using Discord.WebSocket;
 using Discord;
-using DiscordMusicBot.Commands.Interfaces;
+using DiscordMusicBot.SlashCommands.Interfaces;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Services;
 using System.Text;
 
-namespace DiscordMusicBot.Commands.Commands
+namespace DiscordMusicBot.SlashCommands.Commands
 {
     internal class CommandMostPlayed : IDiscordCommand
     {

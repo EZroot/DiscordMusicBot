@@ -9,6 +9,8 @@ namespace DiscordMusicBot.Services.Managers
     {
         private const string CONFIG_FILE_PATH = "config.json";
         private const string ANALYTIC_FILE_PATH = "analytics.json";
+        
+        private BotData? _botDataCache = null;
 
         public AnalyticData LoadAnalytics()
         {
@@ -44,6 +46,11 @@ namespace DiscordMusicBot.Services.Managers
 
         public BotData LoadConfig()
         {
+            if(_botDataCache != null) 
+            { 
+                return (BotData)_botDataCache;
+            }
+
             if (!File.Exists(CONFIG_FILE_PATH))
             {
                 CreateDefaultConfig();
@@ -54,21 +61,53 @@ namespace DiscordMusicBot.Services.Managers
             var apiKey = config.ApiKey;//Environment.GetEnvironmentVariable(config.EnvPath);
             var guildId = config.GuildId;
             var motto = config.CustomStatus;
+            var searchResultBtnEmojis = config.SearchResultButtonEmojis;
             var debugMode = config.DebugMode;
 
-            if (!string.IsNullOrEmpty(apiKey)) return new BotData { ApiKey = apiKey, GuildId = guildId, CustomStatus = motto, DebugMode = debugMode };
+            if (!string.IsNullOrEmpty(apiKey)) 
+            {
+                var botData = new BotData { 
+                    ApiKey = apiKey, 
+                    GuildId = guildId, 
+                    CustomStatus = motto, 
+                    SearchResultButtonEmojis = searchResultBtnEmojis, 
+                    DebugMode = debugMode 
+                    };
+
+                _botDataCache = botData;
+                return botData;
+            }
+
+            _botDataCache = config;
+
             return config;
         }
 
         private void CreateDefaultConfig()
         {
             var motto = new string[] {"Just chillaxin...", "Thinking about life..", "Pondering the universe", "Waiting for AI Overlords."};
+            var defaultSearchResultButtonEmojis = new Dictionary<int,string>
+            {
+                { 0,"\u0030\uFE0F\u20E3" },
+                { 1,"\u0031\uFE0F\u20E3" },
+                { 2,"\u0032\uFE0F\u20E3" },
+                { 3,"\u0033\uFE0F\u20E3" },
+                { 4,"\u0034\uFE0F\u20E3" },
+                { 5,"\u0035\uFE0F\u20E3" },
+                { 6,"\u0036\uFE0F\u20E3" },
+                { 7,"\u0037\uFE0F\u20E3" },
+                { 8,"\u0038\uFE0F\u20E3" },
+                { 9,"\u0039\uFE0F\u20E3" },
+                { 10,"\u0031\uFE0F\u20E3\u0030\uFE0F\u20E3 " }
+            };
+
             var defaultConfig = new BotData
             {
                 ApiKey = "Replace me",
                 EnvPath = "API_KEY",
                 GuildId = "Replace me with server id",
                 CustomStatus = motto,
+                SearchResultButtonEmojis = defaultSearchResultButtonEmojis,
                 DebugMode = false
             };
 

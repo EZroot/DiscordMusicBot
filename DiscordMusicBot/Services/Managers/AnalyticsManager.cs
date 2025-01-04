@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using DiscordMusicBot.Models;
+﻿using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
 
 namespace DiscordMusicBot.Services.Managers
@@ -9,7 +8,7 @@ namespace DiscordMusicBot.Services.Managers
         private AnalyticData _analyticData;
         public AnalyticData AnalyticData => _analyticData;
 
-        public async Task Initialize()
+        public async Task InitializeAsync()
         {
             try
             {

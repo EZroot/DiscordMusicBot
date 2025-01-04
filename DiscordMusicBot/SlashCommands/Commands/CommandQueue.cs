@@ -1,27 +1,26 @@
 ﻿using Discord.WebSocket;
-using DiscordMusicBot.Commands.Interfaces;
+using DiscordMusicBot.SlashCommands.Interfaces;
+using Discord;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Services;
-using System.Text;
-using Discord;
 
-namespace DiscordMusicBot.Commands.Commands
+namespace DiscordMusicBot.SlashCommands.Commands
 {
-    internal class CommandLeave : IDiscordCommand
+    internal class CommandQueue : IDiscordCommand
     {
-        private string _commandName = "leave";
+        private string _commandName = "queue";
         public string CommandName => _commandName;
 
         public SlashCommandBuilder Register()
         {
             return new SlashCommandBuilder()
             .WithName(_commandName)
-            .WithDescription("Show recent song history");
+            .WithDescription("Displays current queue");
         }
 
         public async Task ExecuteAsync(SocketSlashCommand command)
         {
-            await Service.Get<IServiceAudioManager>().LeaveVoice(command);
+            await Service.Get<IServiceAudioManager>().SongQueue(command);
         }
 
     }
