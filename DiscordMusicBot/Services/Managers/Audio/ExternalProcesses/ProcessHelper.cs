@@ -52,7 +52,10 @@ namespace DiscordMusicBot.Services.Managers.Audio.ExternalProcesses
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments = $"-hide_banner -loglevel error -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -i \"{url}\" -af \"volume={GLOBAL_VOLUME}\" -ac 2 -f s16le -ar 48000 pipe:1",
+                    Arguments = $"-hide_banner -loglevel error -reconnect 1 -reconnect_streamed 1 " +
+                                $"-reconnect_delay_max 5 -i \"{url}\" " + 
+                                $"-af \"loudnorm=I=-16:LRA=11,volume={GLOBAL_VOLUME}\" " + 
+                                $"-ac 2 -f s16le -ar 48000 pipe:1",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
