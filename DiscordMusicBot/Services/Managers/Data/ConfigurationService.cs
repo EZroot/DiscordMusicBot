@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace DiscordMusicBot.Services.Managers.Data
 {
-    internal class DataManager : IServiceDataManager
+    internal class ConfigurationService : IServiceDataManager
     {
         private const string CONFIG_FILE_PATH = "config.json";
         private const string ANALYTIC_FILE_PATH = "analytics.json";

@@ -21,7 +21,7 @@ namespace DiscordMusicBot.SlashCommands.Commands
 
         public async Task ExecuteAsync(SocketSlashCommand command)
         {
-            await Service.Get<IServiceAudioManager>().ChangeVolume(command);
+            await Service.Get<IServiceAudioPlaybackService>().ChangeVolume(command);
         }
 
     }

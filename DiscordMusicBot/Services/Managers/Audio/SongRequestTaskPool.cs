@@ -56,7 +56,7 @@ namespace DiscordMusicBot.Services.Managers.Audio
                     try
                     {
                         Debug.Log($"SRQ: Queuing {song.Title}");
-                        await Service.Get<IServiceAudioManager>().PlaySong(song);
+                        await Service.Get<IServiceAudioPlaybackService>().PlaySong(song);
                     }
                     catch (Exception ex)
                     {

@@ -7,7 +7,7 @@ using DiscordMusicBot.SlashCommands.Interfaces;
 
 namespace DiscordMusicBot.Services.Managers.Discord
 {
-    internal class CommandManager : IServiceCommandManager
+    internal class SlashCommandService : IServiceCommandManager
     {
 
         private readonly Dictionary<string, IDiscordCommand> _commands = new();

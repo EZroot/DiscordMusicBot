@@ -4,13 +4,13 @@ using Discord.WebSocket;
 using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
-using DiscordMusicBot.Commands;
-using DiscordMusicBot.Commands.CommandArgs.DiscordChat;
-using DiscordMusicBot.Commands.CommandArgs.AudioPlayer;
+using DiscordMusicBot.InternalCommands;
+using DiscordMusicBot.InternalCommands.CommandArgs.DiscordChat;
+using DiscordMusicBot.InternalCommands.CommandArgs.AudioPlayer;
 
 namespace DiscordMusicBot.Services.Managers.Audio
 {
-    internal class AudioManager : IServiceAudioManager
+    internal class AudioPlaybackService : IServiceAudioPlaybackService
     {
         private IAudioClient? _audioClient;
         private readonly ThreadSafeSongQueue _audioQueuer = new ThreadSafeSongQueue();

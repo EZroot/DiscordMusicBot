@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace DiscordMusicBot.Services.Managers.Data
 {
-    internal class AnalyticsManager : IServiceAnalytics
+    internal class AnalyticsService : IServiceAnalytics
     {
         private AnalyticData _analyticData;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);

@@ -1,8 +1,8 @@
 ﻿using Discord.WebSocket;
 using Discord;
 using DiscordMusicBot.SlashCommands.Interfaces;
-using DiscordMusicBot.Commands;
-using DiscordMusicBot.Commands.CommandArgs.DiscordChat;
+using DiscordMusicBot.InternalCommands;
+using DiscordMusicBot.InternalCommands.CommandArgs.DiscordChat;
 
 namespace DiscordMusicBot.SlashCommands.Commands
 {

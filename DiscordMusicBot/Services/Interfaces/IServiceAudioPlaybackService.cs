@@ -3,7 +3,7 @@ using Discord.WebSocket;
 using DiscordMusicBot.Models;
 namespace DiscordMusicBot.Services.Interfaces
 {
-    internal interface IServiceAudioManager : IService
+    internal interface IServiceAudioPlaybackService : IService
     {
         int SongCount { get; }
         Task PlaySong(SocketSlashCommand command);

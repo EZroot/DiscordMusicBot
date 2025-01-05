@@ -3,12 +3,13 @@ using Discord.WebSocket;
 using DiscordMusicBot.Events;
 using DiscordMusicBot.Events.EventArgs;
 using DiscordMusicBot.Models;
+using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 
-namespace DiscordMusicBot.Services.Managers.Discord
+namespace DiscordMusicBot.Core
 {
-    internal class BotManager : IServiceBotManager
+    internal class DiscordBot
     {
         private const double BOT_LOOP_TIMER_MS = 60000;
         private const int SEARCH_RESULT_MSG_DELETE_MS = 5000;
@@ -16,6 +17,12 @@ namespace DiscordMusicBot.Services.Managers.Discord
 
         private DiscordSocketClient? _client;
         public DiscordSocketClient? Client => _client;
+
+        public DiscordBot()
+        {
+            
+        }
+        
         public async Task Initialize()
         {
             _client = new DiscordSocketClient(new DiscordSocketConfig
@@ -87,7 +94,7 @@ namespace DiscordMusicBot.Services.Managers.Discord
             Debug.Log($"<color=red>{user.Username}</color> <color=white>picked song</color> <color=cyan>{formatTitle}#</color>");
             
             var songData = new SongData() { Title = selectedSong.Title, Url = selectedSong.Url, Length = selectedSong.Length };
-            _ = Task.Run(async () => await Service.Get<IServiceAudioManager>().PlaySong(songData));
+            _ = Task.Run(async () => await Service.Get<IServiceAudioPlaybackService>().PlaySong(songData));
             await component.RespondAsync($"You've added '{selectedSong.Title}' to Queue", ephemeral: true);
             // await Task.Delay(SEARCH_RESULT_MSG_DELETE_MS);
             await component.Message.DeleteAsync();
@@ -117,7 +124,7 @@ namespace DiscordMusicBot.Services.Managers.Discord
 
             EventHub.Subscribe<EvOnFFmpegExit>((a) =>
             {
-                if (Service.Get<IServiceAudioManager>().SongCount > 0) return;
+                if (Service.Get<IServiceAudioPlaybackService>().SongCount > 0) return;
                 Task.Run(async () =>
                 {
                     if (_client == null) return;

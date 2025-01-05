@@ -20,7 +20,7 @@ namespace DiscordMusicBot.SlashCommands.Commands
 
         public async Task ExecuteAsync(SocketSlashCommand command)
         {
-            await Service.Get<IServiceAudioManager>().LeaveVoice(command);
+            await Service.Get<IServiceAudioPlaybackService>().LeaveVoice(command);
         }
 
     }
