@@ -32,6 +32,16 @@ namespace DiscordMusicBot.SlashCommands.Commands
             {
                 await command.RespondAsync(text: $"Searching: `{videoUrl}`", ephemeral: true);
                 var song = await Service.Get<IServiceAudioPlaybackService>().PlaySong(user, videoUrl);
+
+                try
+                {
+                    await Service.Get<IServiceAnalytics>().AddSongAnalytics(user, song.Value);
+                }
+                catch(Exception e)
+                {
+                    Debug.Log($"<color=red>Analytics Error: {e.Message}");
+                }
+
                 await command.ModifyOriginalResponseAsync((m) => m.Content = $"Added **{song.Value.Title}** to Queue!");
                 return;
             }

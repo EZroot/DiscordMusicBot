@@ -94,6 +94,16 @@ namespace DiscordMusicBot.Core
             Debug.Log($"<color=red>{user.Username}</color> <color=white>picked song</color> <color=cyan>{formatTitle}#</color>");
             
             var songData = new SongData() { Title = selectedSong.Title, Url = selectedSong.Url, Length = selectedSong.Length };
+
+            try
+            {
+                await Service.Get<IServiceAnalytics>().AddSongAnalytics(user.Username, songData);
+            }
+            catch (Exception e)
+            {
+                Debug.Log($"<color=red>Analytics Error: {e.Message}");
+            }
+
             await Service.Get<IServiceAudioPlaybackService>().QueueSongToPlay(songData);
             
             await component.RespondAsync($"You've added '{selectedSong.Title}' to Queue", ephemeral: true);
