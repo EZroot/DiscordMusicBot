@@ -1,16 +1,20 @@
+using System.Diagnostics;
 using System.Text;
 using Discord;
 using Discord.WebSocket;
 using DiscordMusicBot.Commands.Interfaces;
 using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
+using DiscordMusicBot.Utils;
 
 namespace DiscordMusicBot.Commands.CommandArgs
 {
     public class CmdSendSearchResult : ICommand
     {
 
-        SocketSlashCommand _command;
+        private SocketSlashCommand _command;
+        private bool _showEmbed;
+        private bool _shortButtonMode;
 
         public CmdSendSearchResult(SocketSlashCommand command)
         {
@@ -24,8 +28,8 @@ namespace DiscordMusicBot.Commands.CommandArgs
             var audioManager = Service.Get<IServiceAudioManager>();
             var dataManager = Service.Get<IServiceDataManager>();
             var arg = (string)(_command.Data.Options.First().Value);
-
-            await _command.RespondAsync($"Searching: {arg}");
+            var user = _command.User;
+            await _command.RespondAsync($"Thinking ...", ephemeral: false);
             await audioManager.CheckAndJoinVoice(_command);
 
             var result = await Service.Get<IServiceYtdlp>().SearchYoutube(arg);
@@ -35,23 +39,80 @@ namespace DiscordMusicBot.Commands.CommandArgs
                 return;
             }
 
-            stringBuilder.Append($"```bash\n* -- * -- Searched: {arg} -- * -- *\n\n");
+            var embedTitle = $"{char.ToUpper(user.Username[0]) + user.Username.Substring(1).ToLower()} searched for '{char.ToUpper(arg[0]) + arg.Substring(1).ToLower()}'";
+            // Build an embed with a more structured and cleaner look
+            var embed = new EmbedBuilder()
+                .WithTitle(embedTitle)
+                .WithColor(new Color(255, 70, 0)); // Sets the embed to dark orange
+
             for (int i = 0; i < result.Count; i++)
             {
-                //Build our selection buttons
-                ButtonStyle style = ButtonStyle.Secondary;
-                buttonBuilder.WithButton(
-                    customId: $"{result[i].Id}", 
-                    style: style,             
-                    emote: new Emoji(dataManager.LoadConfig().SearchResultButtonEmojis[i]));
-
-                //Parse our results string so its not too long
                 var title = result[i].Title;
-                if (title.Length > 64) title = title.Substring(0, 64);
-                stringBuilder.Append($"{i}# {title}\n");
+                var trimmedUrl = result[i].Url.Replace("https://", " ");
+
+                var songLength = result[i].Length;
+                if (songLength == "NA") 
+                    songLength = "LIVE!";
+                else
+                    songLength = FormatHelper.FormatLengthWithDescriptor(songLength);
+                    
+                // if (double.TryParse(songLength, out var songLengthD))
+                // {
+                //     var minutes = (int)(songLengthD / 60d);
+                //     var hour = (int)(minutes / 60d);
+                //     var seconds = (int)(songLengthD % 60d);
+
+                //     if (hour == 0)
+                //     {
+                //         songLength = $"{minutes}:{seconds}";
+                //     }
+                //     else
+                //     {
+                //         minutes = minutes % 60;
+                //         songLength = $"{hour}:{minutes}:{seconds}";
+                //     }
+                // }
+
+                var buttonLabel = $"[{songLength}] \t {title}";
+                if (buttonLabel.Length > 77) buttonLabel = buttonLabel.Substring(0, 77) + "..."; // Add ellipsis to indicate truncation
+                
+                embed.AddField($"#{i + 1}  {buttonLabel}", $" [{trimmedUrl}]({result[i].Url})", false);
+
+                // Build selection buttons
+                ButtonStyle style = ButtonStyle.Secondary;
+                var emojiIndex = i + 1 < dataManager.LoadConfig().SearchResultButtonEmojis.Count ? i + 1 : 0;  // Ensure the index is within bounds
+                try
+                {
+                    if (_shortButtonMode)
+                    {
+                         buttonBuilder.WithButton(
+                            customId: $"{result[i].Id}",
+                            style: style,
+                            emote: new Emoji(dataManager.LoadConfig().SearchResultButtonEmojis[emojiIndex]));
+                    }
+                    else
+                    {
+                        buttonBuilder.WithButton(
+                            label: buttonLabel,
+                            customId: $"{result[i].Id}",
+                            style: style,
+                            emote: new Emoji(dataManager.LoadConfig().SearchResultButtonEmojis[emojiIndex]),
+                            row: i);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Utils.Debug.Log(e.Message);
+                }
             }
-            stringBuilder.Append("```");
-            var messageList = await _command.ModifyOriginalResponseAsync((m) => { m.Content = stringBuilder.ToString(); m.Components = buttonBuilder.Build(); } );
+            if (_showEmbed)
+            {
+                await _command.ModifyOriginalResponseAsync((m) => { m.Content = ""; m.Embed = embed.Build(); m.Components = buttonBuilder.Build(); });
+            }
+            else
+            {
+                await _command.ModifyOriginalResponseAsync((m) => { m.Content = $"**{user.GlobalName}**'s searchin' for **'{char.ToUpper(arg[0]) + arg.Substring(1).ToLower()}'**"; m.Components = buttonBuilder.Build(); });
+            }
         }
 
         public async Task Redo()

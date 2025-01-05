@@ -10,6 +10,7 @@ namespace DiscordMusicBot.Services.Interfaces
         Task<List<SongData>>? SearchYoutube(string query, int maxResults = 5);
         Task StreamToDiscord(IAudioClient client, string videoUrl);
         Task<string> GetSongTitle(string videoUrl);
+        Task<SongData> GetSongDetails(string videoUrl);
         bool IsYouTubeUrl(string url);
     }
 }

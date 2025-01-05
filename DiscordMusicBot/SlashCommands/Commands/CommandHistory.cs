@@ -4,6 +4,8 @@ using DiscordMusicBot.SlashCommands.Interfaces;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Services;
 using System.Text;
+using DiscordMusicBot.Commands;
+using DiscordMusicBot.Commands.CommandArgs;
 
 namespace DiscordMusicBot.SlashCommands.Commands
 {
@@ -21,31 +23,7 @@ namespace DiscordMusicBot.SlashCommands.Commands
 
         public async Task ExecuteAsync(SocketSlashCommand command)
         {
-            var analytics = Service.Get<IServiceAnalytics>();
-            var recentHistory = analytics.AnalyticData.RecentSongHistory;
-            if (recentHistory == null || recentHistory.Length == 0)
-            {
-                await command.RespondAsync(text: $"There are no songs in recent history.", ephemeral: true);
-                return;
-            }
-            var displayText = new StringBuilder();
-            displayText.AppendLine("* -- --  -- -- Recent Song History -- --  -- -- *");
-            for (var i = 0; i < recentHistory.Length; i++)
-            {
-                if (string.IsNullOrEmpty(recentHistory[i].Title)) continue;
-
-                try
-                {
-                    var title = $"{recentHistory[i].Title} \t\t ({recentHistory[i].Url.Insert(5, "\u200B")})";
-                    if (title != null && title != "null")
-                        displayText.AppendLine($"{i}#   {title}");
-                }
-                catch (Exception e)
-                {
-                    Utils.Debug.Log("<color=red>Error: " + e.Message);
-                }
-            }
-            await command.RespondAsync(text: $"{displayText}", ephemeral: true);
+            await CommandHub.ExecuteCommand(new CmdSendHistoryResult(command));
         }
 
     }

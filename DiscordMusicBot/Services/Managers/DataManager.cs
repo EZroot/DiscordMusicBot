@@ -62,6 +62,9 @@ namespace DiscordMusicBot.Services.Managers
             var guildId = config.GuildId;
             var motto = config.CustomStatus;
             var searchResultBtnEmojis = config.SearchResultButtonEmojis;
+            var searchCmdDetailedEmbed = config.SearchCmdDetailedEmbed;
+            var searchCmdButtonShortmode = config.SearchCmdButtonShortmode;
+            
             var debugMode = config.DebugMode;
 
             if (!string.IsNullOrEmpty(apiKey)) 
@@ -71,6 +74,8 @@ namespace DiscordMusicBot.Services.Managers
                     GuildId = guildId, 
                     CustomStatus = motto, 
                     SearchResultButtonEmojis = searchResultBtnEmojis, 
+                    SearchCmdButtonShortmode = searchCmdButtonShortmode,
+                    SearchCmdDetailedEmbed = searchCmdDetailedEmbed,
                     DebugMode = debugMode 
                     };
 
@@ -108,6 +113,8 @@ namespace DiscordMusicBot.Services.Managers
                 GuildId = "Replace me with server id",
                 CustomStatus = motto,
                 SearchResultButtonEmojis = defaultSearchResultButtonEmojis,
+                SearchCmdDetailedEmbed = false,
+                SearchCmdButtonShortmode = false,
                 DebugMode = false
             };
 
@@ -135,9 +142,9 @@ namespace DiscordMusicBot.Services.Managers
         {
             var defaultAnalytics = new AnalyticData
             {
-                GlobalMostPlayedSongs = new List<SongAnlyticData>(),  
-                UserAnalyticData = new List<UserAnalyticData>(),       
-                RecentSongHistory = new SongData[10] //Default song history is 10                    
+                // GlobalMostPlayedSongs = new List<SongAnlyticData>(),  
+                // UserAnalyticData = new List<UserAnalyticData>(),       
+                // RecentSongHistory = new SongData[10] //Default song history is 10                    
             };
 
             try

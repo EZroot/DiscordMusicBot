@@ -21,7 +21,6 @@ namespace DiscordMusicBot.SlashCommands.Commands
 
         public async Task ExecuteAsync(SocketSlashCommand command)
         {
-            var arg = command.Data.Options.First().Value;
             await Service.Get<IServiceAudioManager>().PlaySong(command);
         }
 

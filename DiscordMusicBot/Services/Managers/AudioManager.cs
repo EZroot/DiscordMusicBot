@@ -7,12 +7,13 @@ using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 using System.Text;
+using DiscordMusicBot.Commands;
+using DiscordMusicBot.Commands.CommandArgs;
 
 namespace DiscordMusicBot.Services.Managers
 {
     internal class AudioManager : IServiceAudioManager
     {
-        private const int QUEUE_DISPLAY_LIMIT = 10;
         private IAudioClient? _audioClient;
         private Queue<SongData> _songDataQueue = new Queue<SongData>();
         private SongData _currentPlayingSong;
@@ -29,10 +30,10 @@ namespace DiscordMusicBot.Services.Managers
             if (Service.Get<IServiceYtdlp>().IsYouTubeUrl(videoUrl))
             {
                 await command.RespondAsync(text: $"Searching: `{videoUrl}`", ephemeral: true);
-                string title = await Service.Get<IServiceYtdlp>().GetSongTitle(videoUrl);
-                await Service.Get<IServiceAnalytics>().AddSongAnalytics(user, new SongData { Title = title, Url = videoUrl });
-                await command.ModifyOriginalResponseAsync((m) => m.Content = $"Added **{title}** to Queue!");
-                await PlaySong(title, videoUrl);
+                var songDetails = await Service.Get<IServiceYtdlp>().GetSongDetails(videoUrl);
+                await Service.Get<IServiceAnalytics>().AddSongAnalytics(user, new SongData { Title = songDetails.Title, Url = videoUrl, Length = songDetails.Length });
+                await command.ModifyOriginalResponseAsync((m) => m.Content = $"Added **{songDetails.Title}** to Queue!");
+                await PlaySong(songDetails.Title, videoUrl, songDetails.Length);
                 return;
             }
             else
@@ -42,39 +43,46 @@ namespace DiscordMusicBot.Services.Managers
             }
         }
 
-        public async Task PlaySong(string title, string url)
+        public async Task PlaySong(string title, string url, string length)
         {
-            _songDataQueue.Enqueue(new SongData { Title = title, Url = url });
+            // Enqueue the song data
+            _songDataQueue.Enqueue(new SongData { Title = title, Url = url, Length = length });
+
+            // Check if this is the only song in the queue and no song is currently playing
             if (_songDataQueue.Count == 1 && !Service.Get<IServiceFFmpeg>().IsSongPlaying)
             {
-                _currentPlayingSong = _songDataQueue.Dequeue();
-                EventHub.Raise(new EvOnPlayNextSong() { Title = _currentPlayingSong.Title, Url = _currentPlayingSong.Url });
+                _currentPlayingSong = _songDataQueue.Dequeue();  // Dequeue the song for playing
+
+                // Raise an event to indicate that playback of the next song should begin
+                Debug.Log($"Attempting to play: {_currentPlayingSong.Title} {_currentPlayingSong.Url} {_currentPlayingSong.Length}");
+                EventHub.Raise(new EvOnPlayNextSong() { Title = _currentPlayingSong.Title, Url = _currentPlayingSong.Url, Length = _currentPlayingSong.Length });
             }
-            Debug.Log($"Added song: <color=cyan>{title}</color> <color=magenta>{url}</color> to queue.");
-            await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, url);
+
+            // Stream the song to Discord using yt-dlp and the audio client
+            try
+            {
+                await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, url);
+            }
+            catch (Exception ex)
+            {
+                // Log exceptions that may occur during the streaming process
+                Debug.Log($"<color=red>Error during streaming the song:</color> Title = <color=cyan>{title}</color>, URL = <color=magenta>{url}</color>. <color=red>Exception: {ex.Message}</color>");
+                throw; // Re-throw the exception to handle it upstream or log it as needed
+            }
         }
+
 
         public async Task PlayNextSong(IAudioClient client)
         {
             if (_songDataQueue.Count == 0) { return; }
             _currentPlayingSong = _songDataQueue.Dequeue();
-            EventHub.Raise(new EvOnPlayNextSong() { Title = _currentPlayingSong.Title, Url = _currentPlayingSong.Url });
+            Debug.Log($"Attempting to play: {_currentPlayingSong.Title} {_currentPlayingSong.Url} {_currentPlayingSong.Length}");
+            EventHub.Raise(new EvOnPlayNextSong() { Title = _currentPlayingSong.Title, Url = _currentPlayingSong.Url, Length = _currentPlayingSong.Length });
             await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, _currentPlayingSong.Url);
         }
 
         public async Task SongQueue(SocketSlashCommand command)
         {
-            if (_songDataQueue == null || _songDataQueue.Count == 0)
-            {
-                if (_currentPlayingSong.Title != "" && Service.Get<IServiceFFmpeg>().IsSongPlaying)
-                {
-                    await command.RespondAsync(text: $"Currently playing: {_currentPlayingSong.Title}", ephemeral: true);
-                    return;
-                }
-                await command.RespondAsync(text: $"There are no songs in queue.", ephemeral: true);
-                return;
-            }
-
             var songArr = _songDataQueue.ToArray();
             if (_currentPlayingSong.Title != "" && Service.Get<IServiceFFmpeg>().IsSongPlaying)
             {
@@ -82,16 +90,7 @@ namespace DiscordMusicBot.Services.Managers
                 songArr[0] = _currentPlayingSong;
                 _songDataQueue.ToArray().CopyTo(songArr, 1);
             }
-            var result = new StringBuilder();
-            result.AppendLine("* -- --  -- -- Queued Songs -- --  -- -- *");
-            for (var i = 0; i < songArr.Length; i++)
-            {
-                result.Append(i == 0 ? "Currently playing " : $"{i + 1}# ");
-                if (i == 0) result.AppendLine();
-                result.AppendLine(i == 0 ? $"- : {songArr[i].Title}\n" : songArr[i].Title);
-                if (i > QUEUE_DISPLAY_LIMIT) { result.AppendLine("------------------------ More Hidden ------------------------"); break; } 
-            }
-            await command.RespondAsync(text: $"{result}", ephemeral: true);
+            await CommandHub.ExecuteCommand(new CmdSendQueueResult(command, songArr));
         }
 
         public async Task SkipSong(SocketSlashCommand command)

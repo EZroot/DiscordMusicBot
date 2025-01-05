@@ -36,6 +36,8 @@ namespace DiscordMusicBot.Services.Managers
             await Service.Get<IServiceAnalytics>().InitializeAsync();
             _botData = Service.Get<IServiceDataManager>().LoadConfig();
 
+            Debug.Initialize(_botData.DebugMode);
+
             await _client.LoginAsync(TokenType.Bot, _botData.ApiKey);
             await _client.StartAsync();
 
@@ -53,7 +55,7 @@ namespace DiscordMusicBot.Services.Managers
             if (guildId == 0) Debug.Log("<color=red>Invalid guild id. Bot may not work correctly. (Registering commands)</color>");
             var guild = _client?.GetGuild(guildId);
 
-            if(CLEAR_SLASH_COMMANDS)
+            if (CLEAR_SLASH_COMMANDS)
             {
 #pragma warning disable CS0162 // Unreachable code detected
                 await SlashCommandClear(guild);
@@ -61,9 +63,9 @@ namespace DiscordMusicBot.Services.Managers
             }
             else
             {
-                if (guild != null) 
+                if (guild != null)
                     await Service.Get<IServiceCommandManager>().RegisterAllCommands(guild);
-                if (_client != null) 
+                if (_client != null)
                     _client.SlashCommandExecuted += Ev_SlashCommandHandler;
             }
         }
@@ -76,22 +78,14 @@ namespace DiscordMusicBot.Services.Managers
 
         private async Task Ev_ButtonExecutedAsync(SocketMessageComponent component)
         {
-            await component.Message.ModifyAsync((m) => {
-                m.Content = component.Message.Content + $"\n\n\t\t {component.User.Mention} `Picked #{component.Data.CustomId}`"; 
-                m.Components = null;
-            });
-            
             var user = component.User;
             var songId = component.Data.CustomId;
-            var results = Service.Get<IServiceYtdlp>().SearchResultsHistory;       
-            var selectedSong = results.Find(x=>x.Id == songId);
-
-            _ = Task.Run(async () => await Service.Get<IServiceAudioManager>().PlaySong(selectedSong.Title, selectedSong.Url));
-
-            // await Service.Get<IServiceAnalytics>().AddSongAnalytics(user.Username, new SongData { Title = selectedSong.Title, Url = selectedSong.Url });
-            // await component.DeferAsync();
-            // await Task.Delay(SEARCH_RESULT_MSG_DELETE_MS); //hmm why are we getting blocked gateway task here even with defer....
-            // await component.FollowupAsync($"You added #{component.Data.CustomId} '{selectedSong.Title}' to Queue", ephemeral: true);
+            var results = Service.Get<IServiceYtdlp>().SearchResultsHistory;
+            var selectedSong = results.Find(x => x.Id == songId);
+            await component.Message.ModifyAsync((m) => {m.Content = $"{component.User.Mention} Picked **{selectedSong.Title}**"; m.Components = null; });
+            _ = Task.Run(async () => await Service.Get<IServiceAudioManager>().PlaySong(selectedSong.Title, selectedSong.Url, selectedSong.Length));
+            await component.RespondAsync($"You've added '{selectedSong.Title}' to Queue", ephemeral: true);
+            await Task.Delay(SEARCH_RESULT_MSG_DELETE_MS);
             await component.Message.DeleteAsync();
             Debug.Log($"<color=red>{user.Username}</color> <color=white>picked song</color> <color=cyan>{selectedSong.Title}#</color>");
         }
@@ -100,6 +94,7 @@ namespace DiscordMusicBot.Services.Managers
         {
             var colorTag = msg.Severity == LogSeverity.Error || msg.Severity == LogSeverity.Critical ? "red" : "white";
             colorTag = msg.Severity == LogSeverity.Warning ? "yellow" : colorTag;
+            if(colorTag == "yellow") return Task.CompletedTask;
             Debug.Log($"<color={colorTag}>{msg.ToString()}</color>");
             return Task.CompletedTask;
         }
@@ -130,7 +125,7 @@ namespace DiscordMusicBot.Services.Managers
             {
                 Task.Run(async () =>
                 {
-                    Debug.Log("EvOnPlayNextSong! Updating status song playing");
+                    Debug.Log($"Playing song: {a.Title}");
                     if (_client == null) return;
                     await _client.SetCustomStatusAsync($"Playin '{a.Title}'");
                 });

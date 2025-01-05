@@ -8,6 +8,8 @@
         public string GuildId; 
         public string[] CustomStatus;
         public Dictionary<int,string> SearchResultButtonEmojis;
+        public bool SearchCmdDetailedEmbed;
+        public bool SearchCmdButtonShortmode;
         public bool DebugMode;
     }
 }

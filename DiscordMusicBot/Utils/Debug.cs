@@ -1,20 +1,61 @@
 ﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace DiscordMusicBot.Utils
 {
     public static class Debug
     {
+        private static bool _isDebugMode = false;
+
+        public static void Initialize(bool isDebugMode)
+        {
+            _isDebugMode = true;// isDebugMode;
+        }
+        private static string CleanGeneratedNames(string name)
+        {
+            // First, handle nested types and generics by removing generic indicators and replacing '+' with '.'
+            int genericIndex = name.IndexOf('`');
+            if (genericIndex != -1)
+            {
+                name = name.Substring(0, genericIndex);
+            }
+            name = name.Replace('+', '.');
+
+            // Use a regex to extract meaningful parts from compiler-generated names like "<SearchYoutube>d__6"
+            Match meaningfulPart = Regex.Match(name, @"\<(.+?)\>");
+            if (meaningfulPart.Success)
+            {
+                // If a meaningful part is found within <>, use it directly
+                name = meaningfulPart.Groups[1].Value;
+            }
+            else
+            {
+                // If no <> patterns are found, remove any trailing ".MoveNext" if present
+                name = Regex.Replace(name, @"\.MoveNext$", "");
+            }
+
+            return name;
+        }
+
+
         public static void Log(string input)
         {
-            string timeStamp = DateTime.Now.ToString("hh:mm:ss tt");
+            // Format the timestamp without spaces
+            var timeStamp = DateTime.Now.ToString("h:mm tt").Replace(" ", "");
 
-            StackTrace stackTrace = new StackTrace();
-            StackFrame frame = stackTrace.GetFrame(1); 
+            // Get the calling method details
+            var stackTrace = new StackTrace();
+            var frame = stackTrace.GetFrame(1); // Adjust the frame index if necessary
             var method = frame.GetMethod();
-            string callerClassName = method.ReflectedType.Name; 
-            string callerMethodName = method.Name;
 
-            input = $"<color=magenta>{timeStamp}</color> <color=yellow>[{callerClassName}]</color> " + input;
+            // Clean up the class name to handle generics and nested classes
+            var callerClassName = CleanGeneratedNames(method.ReflectedType.Name);
+            var callerMethodName = CleanGeneratedNames(method.Name);
+
+            if (_isDebugMode)
+                input = $"<color=magenta>{timeStamp}</color> <color=yellow>[{callerClassName}]</color> " + input;
+            else
+                input = $"<color=magenta>{timeStamp}</color> " + input;
 
             int currentIndex = 0;
 

@@ -13,7 +13,7 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
 
         private List<SongData> _searchResultsHistory = new List<SongData>();
         public List<SongData> SearchResultsHistory => _searchResultsHistory;
-        
+
         public async Task<List<SongData>>? SearchYoutube(string query, int maxResults = 5)
         {
             var process = new Process
@@ -53,22 +53,23 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
                     {
                         var title = lines[i].Trim();
                         var url = lines[i + 1].Trim();
-                        var duration = lines[i + 2].Trim();
-
-                        Debug.Log($"{i}# <color=white>{title}</color>");
-
-                        double.TryParse(duration, out double dduration);
-
-                        var durationResult = dduration / 60d;
+                        var durationFormatted = lines[i + 2].Trim();
+                        if(double.TryParse(durationFormatted, out var durationInSeconds))  // Parse the duration as double
+                        {
+                            durationFormatted = FormatDuration(durationInSeconds); // Format the duration to "MM:SS" or "HH:MM:SS"
+                        }else{
+                            //assume its live if it cant be parsed
+                            durationFormatted = "LIVE!";
+                        }
 
                         var foundSong = new SongData
                         {
                             Id = Guid.NewGuid().ToString(),
                             Title = title,
                             Url = url,
-                            Length = durationResult.ToString("0.00")
+                            Length = durationFormatted
                         };
-                        
+
                         _searchResults.Add(foundSong);
                         _searchResultsHistory.Add(foundSong);
                     }
@@ -148,9 +149,43 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
             return title;
         }
 
+        public async Task<SongData> GetSongDetails(string videoUrl)
+        {
+            var ytDlpProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "yt-dlp",
+                    Arguments = $"--get-title --get-duration --no-playlist  {videoUrl}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                }
+            };
+
+            ytDlpProcess.Start();
+            string title = await ytDlpProcess.StandardOutput.ReadLineAsync();
+            string duration = await ytDlpProcess.StandardOutput.ReadLineAsync();
+            await ytDlpProcess.WaitForExitAsync();
+
+            if (ytDlpProcess.ExitCode != 0)
+            {
+                string error = await ytDlpProcess.StandardError.ReadToEndAsync();
+                Debug.Log($"yt-dlp error: {error}");
+            }
+
+            return new SongData() { Title = title, Length = duration, Url = videoUrl };
+        }
+
         public bool IsYouTubeUrl(string url)
         {
             return url.Contains("youtube.com") || url.Contains("youtu.be");
+        }
+
+        private string FormatDuration(double seconds)
+        {
+            TimeSpan time = TimeSpan.FromSeconds(seconds);
+            return time.ToString(time.TotalHours >= 1 ? @"hh\:mm\:ss" : @"mm\:ss");
         }
     }
 }

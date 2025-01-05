@@ -6,7 +6,7 @@ namespace DiscordMusicBot.Services.Interfaces
     {
         int SongCount { get; }
         Task PlaySong(SocketSlashCommand command);
-        Task PlaySong(string title, string url);
+        Task PlaySong(string title, string url, string length);
         Task PlayNextSong(IAudioClient client);
         Task SongQueue(SocketSlashCommand command);
         Task SkipSong(SocketSlashCommand command);
