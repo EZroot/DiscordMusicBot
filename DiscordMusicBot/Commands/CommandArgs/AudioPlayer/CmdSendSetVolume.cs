@@ -1,9 +1,6 @@
-using Discord;
-using Discord.WebSocket;
 using DiscordMusicBot.Commands.Interfaces;
 using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
-using DiscordMusicBot.Utils;
 
 namespace DiscordMusicBot.Commands.CommandArgs.AudioPlayer
 {

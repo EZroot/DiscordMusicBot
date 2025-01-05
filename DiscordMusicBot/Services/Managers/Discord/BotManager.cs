@@ -5,7 +5,6 @@ using DiscordMusicBot.Events.EventArgs;
 using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
-using System.Globalization;
 
 namespace DiscordMusicBot.Services.Managers.Discord
 {

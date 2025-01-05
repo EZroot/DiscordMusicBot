@@ -1,8 +1,6 @@
 ﻿using Discord;
 using Discord.Audio;
 using Discord.WebSocket;
-using DiscordMusicBot.Events.EventArgs;
-using DiscordMusicBot.Events;
 using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
@@ -65,7 +63,7 @@ namespace DiscordMusicBot.Services.Managers.Audio
 
         public async Task SongQueue(SocketSlashCommand command)
         {
-            var songArr = _audioQueuer.SongQueue;
+            var songArr = _audioQueuer.SongQueueArray;
             await CommandHub.ExecuteCommand(new CmdSendQueueResult(command, songArr));
         }
 

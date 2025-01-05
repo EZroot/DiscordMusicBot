@@ -1,6 +1,4 @@
-using Discord;
 using Discord.Audio;
-using Discord.WebSocket;
 using DiscordMusicBot.Commands.Interfaces;
 using DiscordMusicBot.Events;
 using DiscordMusicBot.Events.EventArgs;
