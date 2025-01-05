@@ -5,7 +5,7 @@ using System.Reflection;
 using DiscordMusicBot.Utils;
 using DiscordMusicBot.SlashCommands.Interfaces;
 
-namespace DiscordMusicBot.Services.Managers
+namespace DiscordMusicBot.Services.Managers.Discord
 {
     internal class CommandManager : IServiceCommandManager
     {

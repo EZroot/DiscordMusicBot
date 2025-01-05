@@ -1,14 +1,11 @@
-using System.Diagnostics;
-using System.Text;
 using Discord;
 using Discord.WebSocket;
 using DiscordMusicBot.Commands.Interfaces;
-using DiscordMusicBot.Models;
 using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 
-namespace DiscordMusicBot.Commands.CommandArgs
+namespace DiscordMusicBot.Commands.CommandArgs.DiscordChat
 {
     public class CmdSendHistoryResult : ICommand
     {

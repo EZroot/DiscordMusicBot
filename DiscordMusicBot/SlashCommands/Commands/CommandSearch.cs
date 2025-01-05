@@ -2,7 +2,7 @@
 using Discord;
 using DiscordMusicBot.SlashCommands.Interfaces;
 using DiscordMusicBot.Commands;
-using DiscordMusicBot.Commands.CommandArgs;
+using DiscordMusicBot.Commands.CommandArgs.DiscordChat;
 
 namespace DiscordMusicBot.SlashCommands.Commands
 {

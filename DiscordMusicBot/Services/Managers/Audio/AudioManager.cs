@@ -6,11 +6,10 @@ using DiscordMusicBot.Events;
 using DiscordMusicBot.Models;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
-using System.Text;
 using DiscordMusicBot.Commands;
-using DiscordMusicBot.Commands.CommandArgs;
+using DiscordMusicBot.Commands.CommandArgs.DiscordChat;
 
-namespace DiscordMusicBot.Services.Managers
+namespace DiscordMusicBot.Services.Managers.Audio
 {
     internal class AudioManager : IServiceAudioManager
     {
@@ -48,17 +47,15 @@ namespace DiscordMusicBot.Services.Managers
             // Enqueue the song data
             _songDataQueue.Enqueue(new SongData { Title = title, Url = url, Length = length });
 
-            // Check if this is the only song in the queue and no song is currently playing
             if (_songDataQueue.Count == 1 && !Service.Get<IServiceFFmpeg>().IsSongPlaying)
             {
-                _currentPlayingSong = _songDataQueue.Dequeue();  // Dequeue the song for playing
+                _currentPlayingSong = _songDataQueue.Dequeue();
 
-                // Raise an event to indicate that playback of the next song should begin
-                Debug.Log($"Attempting to play: {_currentPlayingSong.Title} {_currentPlayingSong.Url} {_currentPlayingSong.Length}");
+                var formatTitle = title.Length > 50 ? title.Substring(0,42) : title;
+                Debug.Log($"<color=magenta>Attempting to play</color>: <color=white>{formatTitle} [{_currentPlayingSong.Length}]</color>");
                 EventHub.Raise(new EvOnPlayNextSong() { Title = _currentPlayingSong.Title, Url = _currentPlayingSong.Url, Length = _currentPlayingSong.Length });
             }
 
-            // Stream the song to Discord using yt-dlp and the audio client
             try
             {
                 await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, url);
@@ -67,7 +64,6 @@ namespace DiscordMusicBot.Services.Managers
             {
                 // Log exceptions that may occur during the streaming process
                 Debug.Log($"<color=red>Error during streaming the song:</color> Title = <color=cyan>{title}</color>, URL = <color=magenta>{url}</color>. <color=red>Exception: {ex.Message}</color>");
-                throw; // Re-throw the exception to handle it upstream or log it as needed
             }
         }
 
@@ -76,7 +72,9 @@ namespace DiscordMusicBot.Services.Managers
         {
             if (_songDataQueue.Count == 0) { return; }
             _currentPlayingSong = _songDataQueue.Dequeue();
-            Debug.Log($"Attempting to play: {_currentPlayingSong.Title} {_currentPlayingSong.Url} {_currentPlayingSong.Length}");
+            var title = _currentPlayingSong.Title;
+            var formatTitle = title.Length > 50 ? title.Substring(0,42) : title;
+            Debug.Log($"<color=magenta>Attempting to play</color>: <color=white>{formatTitle} [{_currentPlayingSong.Length}]</color>");
             EventHub.Raise(new EvOnPlayNextSong() { Title = _currentPlayingSong.Title, Url = _currentPlayingSong.Url, Length = _currentPlayingSong.Length });
             await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, _currentPlayingSong.Url);
         }
@@ -106,7 +104,7 @@ namespace DiscordMusicBot.Services.Managers
         public async Task ChangeVolume(SocketSlashCommand command)
         {
             var option = command.Data.Options.First();
-            var volume = (float)((double)(option?.Value));
+            var volume = (float)(double)(option?.Value);
             if (volume >= 0 && volume <= 100)
             {
                 await command.RespondAsync(text: $"Volume set: {volume.ToString("0")}/100", ephemeral: true);

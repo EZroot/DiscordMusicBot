@@ -3,7 +3,7 @@ using DiscordMusicBot.Services.Interfaces;
 using System.Collections.Concurrent;
 using System.Threading;
 
-namespace DiscordMusicBot.Services.Managers
+namespace DiscordMusicBot.Services.Managers.Data
 {
     internal class AnalyticsManager : IServiceAnalytics
     {

@@ -3,13 +3,13 @@ using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 using Newtonsoft.Json;
 
-namespace DiscordMusicBot.Services.Managers
+namespace DiscordMusicBot.Services.Managers.Data
 {
     internal class DataManager : IServiceDataManager
     {
         private const string CONFIG_FILE_PATH = "config.json";
         private const string ANALYTIC_FILE_PATH = "analytics.json";
-        
+
         private BotData? _botDataCache = null;
 
         public AnalyticData LoadAnalytics()
@@ -46,8 +46,8 @@ namespace DiscordMusicBot.Services.Managers
 
         public BotData LoadConfig()
         {
-            if(_botDataCache != null) 
-            { 
+            if (_botDataCache != null)
+            {
                 return (BotData)_botDataCache;
             }
 
@@ -64,20 +64,21 @@ namespace DiscordMusicBot.Services.Managers
             var searchResultBtnEmojis = config.SearchResultButtonEmojis;
             var searchCmdDetailedEmbed = config.SearchCmdDetailedEmbed;
             var searchCmdButtonShortmode = config.SearchCmdButtonShortmode;
-            
+
             var debugMode = config.DebugMode;
 
-            if (!string.IsNullOrEmpty(apiKey)) 
+            if (!string.IsNullOrEmpty(apiKey))
             {
-                var botData = new BotData { 
-                    ApiKey = apiKey, 
-                    GuildId = guildId, 
-                    CustomStatus = motto, 
-                    SearchResultButtonEmojis = searchResultBtnEmojis, 
+                var botData = new BotData
+                {
+                    ApiKey = apiKey,
+                    GuildId = guildId,
+                    CustomStatus = motto,
+                    SearchResultButtonEmojis = searchResultBtnEmojis,
                     SearchCmdButtonShortmode = searchCmdButtonShortmode,
                     SearchCmdDetailedEmbed = searchCmdDetailedEmbed,
-                    DebugMode = debugMode 
-                    };
+                    DebugMode = debugMode
+                };
 
                 _botDataCache = botData;
                 return botData;
@@ -90,8 +91,8 @@ namespace DiscordMusicBot.Services.Managers
 
         private void CreateDefaultConfig()
         {
-            var motto = new string[] {"Just chillaxin...", "Thinking about life..", "Pondering the universe", "Waiting for AI Overlords."};
-            var defaultSearchResultButtonEmojis = new Dictionary<int,string>
+            var motto = new string[] { "Just chillaxin...", "Thinking about life..", "Pondering the universe", "Waiting for AI Overlords." };
+            var defaultSearchResultButtonEmojis = new Dictionary<int, string>
             {
                 { 0,"\u0030\uFE0F\u20E3" },
                 { 1,"\u0031\uFE0F\u20E3" },
@@ -135,7 +136,7 @@ namespace DiscordMusicBot.Services.Managers
             Debug.Log("\t\tApiKey	'MjY5NzcY5NMjY5NzcYMjY5Nzc.MjY5Nzc.MjY5NzcjY5NzcMjY5Nzc-ozWf2JDfLVtKGUK3rXQz'");
             Debug.Log("\t\tGuildId	'308708637679812608'");
             Console.Read();
-            
+
         }
 
         private void CreateDefaultAnalytics()

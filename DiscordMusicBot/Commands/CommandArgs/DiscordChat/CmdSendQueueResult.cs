@@ -8,7 +8,7 @@ using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 
-namespace DiscordMusicBot.Commands.CommandArgs
+namespace DiscordMusicBot.Commands.CommandArgs.DiscordChat
 {
     public class CmdSendQueueResult : ICommand
     {

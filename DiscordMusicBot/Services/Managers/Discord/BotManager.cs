@@ -7,7 +7,7 @@ using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 using System.Globalization;
 
-namespace DiscordMusicBot.Services.Managers
+namespace DiscordMusicBot.Services.Managers.Discord
 {
     internal class BotManager : IServiceBotManager
     {
@@ -82,19 +82,24 @@ namespace DiscordMusicBot.Services.Managers
             var songId = component.Data.CustomId;
             var results = Service.Get<IServiceYtdlp>().SearchResultsHistory;
             var selectedSong = results.Find(x => x.Id == songId);
-            await component.Message.ModifyAsync((m) => {m.Content = $"{component.User.Mention} Picked **{selectedSong.Title}**"; m.Components = null; });
+            await component.Message.ModifyAsync((m) => { m.Content = $"{component.User.Mention} Picked **{selectedSong.Title}**"; m.Components = null; });
+            
+            //Formated for debugging
+            var title = selectedSong.Title;
+            var formatTitle = title.Length > 50 ? title.Substring(0,42) : title;
+            Debug.Log($"<color=red>{user.Username}</color> <color=white>picked song</color> <color=cyan>{formatTitle}#</color>");
+
             _ = Task.Run(async () => await Service.Get<IServiceAudioManager>().PlaySong(selectedSong.Title, selectedSong.Url, selectedSong.Length));
             await component.RespondAsync($"You've added '{selectedSong.Title}' to Queue", ephemeral: true);
             await Task.Delay(SEARCH_RESULT_MSG_DELETE_MS);
             await component.Message.DeleteAsync();
-            Debug.Log($"<color=red>{user.Username}</color> <color=white>picked song</color> <color=cyan>{selectedSong.Title}#</color>");
         }
 
         private static Task Ev_Log(LogMessage msg)
         {
             var colorTag = msg.Severity == LogSeverity.Error || msg.Severity == LogSeverity.Critical ? "red" : "white";
             colorTag = msg.Severity == LogSeverity.Warning ? "yellow" : colorTag;
-            if(colorTag == "yellow") return Task.CompletedTask;
+            if (colorTag == "yellow") return Task.CompletedTask;
             Debug.Log($"<color={colorTag}>{msg.ToString()}</color>");
             return Task.CompletedTask;
         }
@@ -125,9 +130,11 @@ namespace DiscordMusicBot.Services.Managers
             {
                 Task.Run(async () =>
                 {
-                    Debug.Log($"Playing song: {a.Title}");
+                    var title = a.Title;
+                    var formatTitle = title.Length > 50 ? title.Substring(0,42) : title;
+                    Debug.Log($"<color=magenta>Playing</color>: <color=white>{formatTitle}</color>");
                     if (_client == null) return;
-                    await _client.SetCustomStatusAsync($"Playin '{a.Title}'");
+                    await _client.SetCustomStatusAsync($"Playin '{title}'");
                 });
             });
 
@@ -156,7 +163,7 @@ namespace DiscordMusicBot.Services.Managers
                 string textElement = stringInfo.SubstringByTextElements(i, 1);
                 foreach (char c in textElement)
                 {
-                    result += $"\\u{((int)c):X4}";
+                    result += $"\\u{(int)c:X4}";
                 }
             }
 

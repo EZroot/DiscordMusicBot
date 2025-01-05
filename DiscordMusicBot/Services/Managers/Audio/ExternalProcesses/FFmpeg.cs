@@ -5,61 +5,23 @@ using DiscordMusicBot.Services.Interfaces;
 using System.Diagnostics;
 using Debug = DiscordMusicBot.Utils.Debug;
 
-namespace DiscordMusicBot.Services.Managers.ExternalProcesses
+namespace DiscordMusicBot.Services.Managers.Audio.ExternalProcesses
 {
     internal class FFmpeg : IServiceFFmpeg
     {
-        private const float GLOBAL_VOLUME = 1f;
-        Process? _ffmpegProcess = null;
-
+        private const int AUDIO_BYTE_SIZE = 3840;
+        private Process? _ffmpegProcess = null;
         private float _volume = 0.1f; // Default volume
-
+        
         public bool IsSongPlaying => _ffmpegProcess != null;
 
         public async Task SetVolume(float newVolume)
         {
-            Debug.Log($"Volume set: {_volume} -> {newVolume} ");
+            Debug.Log($"<color=magenta>Volume set:</color> {_volume} -> {newVolume} ");
             _volume = newVolume;
             await Task.CompletedTask;
         }
-
-        public Process CreateStream(string url)
-        {
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "ffmpeg",
-                    Arguments = $"-hide_banner -loglevel error -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -i \"{url}\" -af \"volume={GLOBAL_VOLUME}\" -ac 2 -f s16le -ar 48000 pipe:1",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                },
-                EnableRaisingEvents = true
-            };
-
-
-            process.Start();
-
-            Task.Run(async () =>
-            {
-                try
-                {
-                    string line;
-                    while ((line = await process.StandardError.ReadLineAsync()) != null)
-                    {
-                        //Ignore errors to avoid console spam
-                        Debug.Log($"FFMPEG:> <color=yellow>{line}</color>");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.Log($"Error reading ffmpeg output: {ex.Message}");
-                }
-            });
-            return process;
-        }
-
+        
         public bool ForceClose()
         {
             if (_ffmpegProcess != null)
@@ -72,12 +34,12 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
 
         public async Task StreamToDiscord(IAudioClient client, string url)
         {
+            if (_ffmpegProcess != null) 
+                return; 
+
             try
             {
-                //If song is currently playing, return
-                if (_ffmpegProcess != null) { return; }
-                _ffmpegProcess = CreateStream(url);
-                // Subscribe to the ffmpeg process exit event, to play our next song
+                _ffmpegProcess = ProcessHelper.CreateStream(url);
                 _ffmpegProcess.Exited += (sender, args) =>
                 {
                     EventHub.Raise(new EvOnFFmpegExit());
@@ -85,11 +47,12 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
                     _ffmpegProcess = null;
                     Service.Get<IServiceAudioManager>().PlayNextSong(client);
                 };
+
                 var output = _ffmpegProcess.StandardOutput.BaseStream;
                 var discord = client.CreatePCMStream(AudioApplication.Mixed);
                 try
                 {
-                    byte[] buffer = new byte[3840];
+                    byte[] buffer = new byte[AUDIO_BYTE_SIZE];
                     int bytesRead;
                     while ((bytesRead = await output.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
@@ -101,7 +64,7 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
                 }
                 catch (Exception ex)
                 {
-                    Debug.Log($"Error during streaming: {ex.Message}.");
+                    Debug.Log($"<color=red>Error during streaming: {ex.Message}.");
                 }
                 finally
                 {
@@ -110,10 +73,7 @@ namespace DiscordMusicBot.Services.Managers.ExternalProcesses
             }
             catch (Exception ex)
             {
-                Debug.Log($"Error during ffmpeg creation: {ex.Message}.");
-            }
-            finally
-            {
+                Debug.Log($"<color=red>Error during ffmpeg creation: {ex.Message}.");
             }
         }
 
