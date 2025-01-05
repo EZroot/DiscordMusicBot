@@ -4,21 +4,22 @@
 - Very easy to setup!
 
 ## ✨ Latest Updates
-- **Release v0.2**
+- **Release v0.3**
   
 ## 🚧 Prerequisites (Included in Releases (Exception: Ffmpeg))
 - **Yt-dlp**
 - **Ffmpeg**
 - **libsodium.dll & opus.dll**
 
-> **Note:** If building for Linux, make sure to get the proper ytdlp to include in your build folder.
+> **Note:** Linux/Window Builds - Ensure to include libsodium, opus, and yt-dlp program in your build folder. (Install ffmpeg normally, so you can use it in the terminal from anywhere)
 
 ## 🛠 Installation
-1. **Extract content in Release.zip**
-2. **Run DiscordModBot once to generate** the `config.json`.
-3. **Set your Discord API key** in `config.json`.
-4. **Set your Guild (Server) ID** in `config.json` to register slash commands.
-5. **Run the bot!**
+1. **Extract content in publish.zip**
+2. **Download libsodium.dll, opus.dll, and yt-dlp from github releases, drag those in the extracted publish folder**
+3. **Run DiscordModBot once to generate** the `config.json`.
+4. **Set your Discord API key** in `config.json`.
+5. **Set your Guild (Server) ID** in `config.json` to register slash commands.
+6. **Run the bot!**
 
 ## 🌐 Bot Commands Workflow
 ```mermaid
