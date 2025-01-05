@@ -16,8 +16,6 @@ namespace DiscordMusicBot.Services.Managers.Discord
         private const bool CLEAR_SLASH_COMMANDS = false;
 
         private DiscordSocketClient? _client;
-        private BotData _botData;
-        private BotTimer _botTimer;
         public DiscordSocketClient? Client => _client;
         public async Task Initialize()
         {
@@ -32,13 +30,13 @@ namespace DiscordMusicBot.Services.Managers.Discord
             _client.Disconnected += UnsubscribeToEvents;
             _client.ButtonExecuted += Ev_ButtonExecutedAsync;
 
-            _botTimer = new BotTimer(BOT_LOOP_TIMER_MS);
+            new BotTimer(BOT_LOOP_TIMER_MS);
             await Service.Get<IServiceAnalytics>().InitializeAsync();
-            _botData = Service.Get<IServiceDataManager>().LoadConfig();
 
-            Debug.Initialize(_botData.DebugMode);
+            var botData = Service.Get<IServiceDataManager>().LoadConfig();
+            Debug.Initialize(botData.DebugMode);
 
-            await _client.LoginAsync(TokenType.Bot, _botData.ApiKey);
+            await _client.LoginAsync(TokenType.Bot, botData.ApiKey);
             await _client.StartAsync();
 
             await UpdateBotStatus();
@@ -88,8 +86,9 @@ namespace DiscordMusicBot.Services.Managers.Discord
             var title = selectedSong.Title;
             var formatTitle = title.Length > 50 ? title.Substring(0,42) : title;
             Debug.Log($"<color=red>{user.Username}</color> <color=white>picked song</color> <color=cyan>{formatTitle}#</color>");
-
-            _ = Task.Run(async () => await Service.Get<IServiceAudioManager>().PlaySong(selectedSong.Title, selectedSong.Url, selectedSong.Length));
+            
+            var songData = new SongData() { Title = selectedSong.Title, Url = selectedSong.Url, Length = selectedSong.Length };
+            _ = Task.Run(async () => await Service.Get<IServiceAudioManager>().PlaySong(songData));
             await component.RespondAsync($"You've added '{selectedSong.Title}' to Queue", ephemeral: true);
             await Task.Delay(SEARCH_RESULT_MSG_DELETE_MS);
             await component.Message.DeleteAsync();
@@ -150,24 +149,8 @@ namespace DiscordMusicBot.Services.Managers.Discord
 
         private async Task UpdateBotStatus()
         {
-            await _client.SetCustomStatusAsync($"{GetRandomMotto(_botData)}");
-        }
-
-        private string GetUnicodeCodePoints(string input)
-        {
-            StringInfo stringInfo = new StringInfo(input);
-            string result = "";
-
-            for (int i = 0; i < stringInfo.LengthInTextElements; i++)
-            {
-                string textElement = stringInfo.SubstringByTextElements(i, 1);
-                foreach (char c in textElement)
-                {
-                    result += $"\\u{(int)c:X4}";
-                }
-            }
-
-            return result;
+            var botData = Service.Get<IServiceDataManager>().LoadConfig();
+            await _client.SetCustomStatusAsync($"{GetRandomMotto(botData)}");
         }
 
         private string GetRandomMotto(BotData botData)

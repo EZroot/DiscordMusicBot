@@ -8,6 +8,7 @@ using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
 using DiscordMusicBot.Commands;
 using DiscordMusicBot.Commands.CommandArgs.DiscordChat;
+using DiscordMusicBot.Commands.CommandArgs.AudioPlayer;
 
 namespace DiscordMusicBot.Services.Managers.Audio
 {
@@ -31,55 +32,35 @@ namespace DiscordMusicBot.Services.Managers.Audio
                 var songDetails = await Service.Get<IServiceYtdlp>().GetSongDetails(videoUrl);
                 await Service.Get<IServiceAnalytics>().AddSongAnalytics(user, new SongData { Title = songDetails.Title, Url = videoUrl, Length = songDetails.Length });
                 await command.ModifyOriginalResponseAsync((m) => m.Content = $"Added **{songDetails.Title}** to Queue!");
-                await PlaySong(songDetails.Title, videoUrl, songDetails.Length);
+                var songData = new SongData() { Id = "NA", Title = songDetails.Title, Url = videoUrl, Length = songDetails.Length };
+                await PlaySong(songData);
                 return;
             }
             else
             {
-                Debug.Log($"'{videoUrl}' Invalid url.");
+                Debug.Log($"<color=magenta>{user}:></color> <color=red>'{videoUrl}' Invalid url.</color>");
                 await command.RespondAsync(text: $"`{videoUrl}` is not a valid youtube url.", ephemeral: true);
             }
         }
 
-        public async Task PlaySong(string title, string url, string length)
+        public async Task PlaySong(SongData songData)
         {
-            // _songDataQueue.Enqueue(new SongData { Title = title, Url = url, Length = length });
-            _audioQueuer.Enqueue(new SongData { Title = title, Url = url, Length = length });
-            if (_audioQueuer.SongCount == 1 && !Service.Get<IServiceFFmpeg>().IsSongPlaying)
-            {
-                _audioQueuer.CurrentPlayingSong = _audioQueuer.Dequeue();
-                if(_audioQueuer.CurrentPlayingSong != null)
-                {
-                    var formatTitle = title.Length > 50 ? title.Substring(0,42) : title;
-                    Debug.Log($"<color=magenta>Attempting to play</color>: <color=white>{formatTitle} [{_audioQueuer.CurrentPlayingSong.Value.Length}]</color>");
-                    EventHub.Raise(new EvOnPlayNextSong() { Title = _audioQueuer.CurrentPlayingSong.Value.Title, Url = _audioQueuer.CurrentPlayingSong.Value.Url, Length = _audioQueuer.CurrentPlayingSong.Value.Length });
-                }
-            }
+            await CommandHub.ExecuteCommand(new CmdSendAddSong(_audioClient, _audioQueuer, songData));
 
             try
             {
-                await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, url);
+                await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, songData.Url);
             }
             catch (Exception ex)
             {
                 // Log exceptions that may occur during the streaming process
-                Debug.Log($"<color=red>Error during streaming the song:</color> Title = <color=cyan>{title}</color>, URL = <color=magenta>{url}</color>. <color=red>Exception: {ex.Message}</color>");
+                Debug.Log($"<color=red>Error during streaming the song:</color> Title = <color=cyan>{songData.Title}</color>, URL = <color=magenta>{songData.Url}</color>. <color=red>Exception: {ex.Message}</color>");
             }
         }
 
         public async Task PlayNextSong(IAudioClient client)
         {
-            if (_audioQueuer.SongCount == 0) { return; }
-            _audioQueuer.CurrentPlayingSong = _audioQueuer.Dequeue();
-            if(_audioQueuer.CurrentPlayingSong != null)
-            {
-                var title = _audioQueuer.CurrentPlayingSong.Value.Title;
-                var formatTitle = title.Length > 50 ? title.Substring(0,42) : title;
-                Debug.Log($"<color=magenta>Attempting to play</color>: <color=white>{formatTitle} [{_audioQueuer.CurrentPlayingSong.Value.Length}]</color>");
-                EventHub.Raise(new EvOnPlayNextSong() { Title = _audioQueuer.CurrentPlayingSong.Value.Title, Url = _audioQueuer.CurrentPlayingSong.Value.Url, Length = _audioQueuer.CurrentPlayingSong.Value.Length });
-                await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, _audioQueuer.CurrentPlayingSong.Value.Url);
-            }
-            await Task.CompletedTask;
+            await CommandHub.ExecuteCommand(new CmdSendPlayNextSong(_audioClient, _audioQueuer));
         }
 
         public async Task SongQueue(SocketSlashCommand command)
@@ -101,12 +82,11 @@ namespace DiscordMusicBot.Services.Managers.Audio
         public async Task ChangeVolume(SocketSlashCommand command)
         {
             var option = command.Data.Options.First();
-            var volume = (float)(double)(option?.Value);
-            if (volume >= 0 && volume <= 100)
+            var volume = (string)option.Value;
+            if(double.TryParse(volume, out var volumeD))
             {
-                await command.RespondAsync(text: $"Volume set: {volume.ToString("0")}/100", ephemeral: true);
-                volume = volume / 100f;
-                await Service.Get<IServiceFFmpeg>().SetVolume(volume);
+                await CommandHub.ExecuteCommand(new CmdSendSetVolume((float)volumeD));
+                await command.RespondAsync(text: $"Volume set: {volumeD.ToString("0")}/100", ephemeral: true);
                 return;
             }
             await command.RespondAsync(text: $"'{volume}' is invalid. Volume must be 0-100", ephemeral: true);
@@ -128,7 +108,7 @@ namespace DiscordMusicBot.Services.Managers.Audio
             {
                 try
                 {
-                    Debug.Log("Joined voice channel");
+                    Debug.Log($"<color=magenta>{user.Username}</color>:> Bot joined voice channel");
                     _audioClient = await voiceChannel.ConnectAsync();
                     if (_audioQueuer.SongCount > 0 || Service.Get<IServiceFFmpeg>().IsSongPlaying) Service.Get<IServiceFFmpeg>().ForceClose();
                 }

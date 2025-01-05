@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace DiscordMusicBot.Services.Managers.Audio
 {
-    internal class AudioQueuer
+    public class AudioQueuer
     {
         // Lock object to guard access to the queue and current song
         private readonly object _queueLock = new object();

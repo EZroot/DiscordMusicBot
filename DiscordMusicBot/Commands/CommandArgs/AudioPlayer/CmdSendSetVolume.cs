@@ -9,15 +9,20 @@ namespace DiscordMusicBot.Commands.CommandArgs.AudioPlayer
 {
     public class CmdSendSetVolume : ICommand
     {
-        private SocketSlashCommand _command;
+        private float _vol;
 
-        public CmdSendSetVolume(SocketSlashCommand command)
+        public CmdSendSetVolume(float volume)
         {
-            _command = command;
+            _vol = volume;
         }
 
         public async Task ExecuteAsync()
         {
+            if (_vol >= 0 && _vol <= 100)
+            {
+                _vol = _vol / 100f;
+                await Service.Get<IServiceFFmpeg>().SetVolume(_vol);
+            }
         }
 
 
