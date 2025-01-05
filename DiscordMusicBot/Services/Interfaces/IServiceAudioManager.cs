@@ -10,6 +10,7 @@ namespace DiscordMusicBot.Services.Interfaces
         Task PlaySong(SongData songData);
         Task PlayNextSong(IAudioClient client);
         Task SongQueue(SocketSlashCommand command);
+        Task ShuffleQueue(SocketSlashCommand command);
         Task SkipSong(SocketSlashCommand command);
         Task ChangeVolume(SocketSlashCommand command);
         Task CheckAndJoinVoice(SocketSlashCommand command);

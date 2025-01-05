@@ -72,6 +72,8 @@ namespace DiscordMusicBot.Commands.CommandArgs.DiscordChat
 
             for (int i = 0; i < result.Count; i++)
             {
+                if(!Service.Get<IServiceYtdlp>().IsYouTubeUrl(result[i].Url)) continue;
+
                 var title = result[i].Title;
                 var trimmedUrl = result[i].Url.Replace("https://", " ");
                 var songLength = result[i].Length;

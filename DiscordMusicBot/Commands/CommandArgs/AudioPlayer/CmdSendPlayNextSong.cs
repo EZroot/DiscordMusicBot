@@ -13,10 +13,10 @@ namespace DiscordMusicBot.Commands.CommandArgs.AudioPlayer
 {
     public class CmdSendPlayNextSong : ICommand
     {
-        private AudioQueuer _audioQueuer;
+        private ThreadSafeSongQueue _audioQueuer;
         private IAudioClient _client;
 
-        public CmdSendPlayNextSong(IAudioClient client, AudioQueuer audioQueuer)
+        public CmdSendPlayNextSong(IAudioClient client, ThreadSafeSongQueue audioQueuer)
         {
             _audioQueuer = audioQueuer;
             _client = client;

@@ -13,7 +13,7 @@ namespace DiscordMusicBot.Services.Managers.Audio
     internal class AudioManager : IServiceAudioManager
     {
         private IAudioClient? _audioClient;
-        private readonly AudioQueuer _audioQueuer = new AudioQueuer();
+        private readonly ThreadSafeSongQueue _audioQueuer = new ThreadSafeSongQueue();
         public int SongCount => _audioQueuer.SongCount;
 
         public async Task PlaySong(SocketSlashCommand command)
@@ -45,6 +45,10 @@ namespace DiscordMusicBot.Services.Managers.Audio
         {
             await CommandHub.ExecuteCommand(new CmdSendAddSong(_audioClient, _audioQueuer, songData));
 
+
+            //It seems like this holds up the queue option, or something similar,
+            //we need to spawn stream to discord off in a new task, but we need to manage it as well...
+            
             try
             {
                 await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, songData.Url);
@@ -65,6 +69,19 @@ namespace DiscordMusicBot.Services.Managers.Audio
         {
             var songArr = _audioQueuer.SongQueueArray;
             await CommandHub.ExecuteCommand(new CmdSendQueueResult(command, songArr));
+        }
+
+        public async Task ShuffleQueue(SocketSlashCommand command)
+        {
+            if(_audioQueuer.SongCount > 0)
+            {
+                await CommandHub.ExecuteCommand(new CmdSendShuffleQueue(_audioQueuer));
+                await command.RespondAsync("Queued has been shuffled!", ephemeral: true);
+                await CommandHub.ExecuteCommand(new CmdSendQueueResult(command, _audioQueuer.SongQueueArray));
+                return;
+            }
+
+            await command.RespondAsync("There are no songs available to shuffle...", ephemeral: true);
         }
 
         public async Task SkipSong(SocketSlashCommand command)

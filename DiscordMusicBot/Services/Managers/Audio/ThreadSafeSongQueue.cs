@@ -2,7 +2,7 @@ using DiscordMusicBot.Models;
 
 namespace DiscordMusicBot.Services.Managers.Audio
 {
-    public class AudioQueuer
+    public class ThreadSafeSongQueue
     {
         private static readonly Random _rng = new Random();
         private readonly object _queueLock = new object();
@@ -67,8 +67,10 @@ namespace DiscordMusicBot.Services.Managers.Audio
 
         public void Enqueue(SongData song)
         {
+            Utils.Debug.Log("AQ: Waiting for queue lock...");
             lock (_queueLock)
             {
+                Utils.Debug.Log($"AQ: Added to queue: {song.Title} {song.Url}");
                 _songQueue.Enqueue(song);
             }
         }

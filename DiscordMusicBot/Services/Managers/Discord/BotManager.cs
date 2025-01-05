@@ -89,8 +89,9 @@ namespace DiscordMusicBot.Services.Managers.Discord
             var songData = new SongData() { Title = selectedSong.Title, Url = selectedSong.Url, Length = selectedSong.Length };
             _ = Task.Run(async () => await Service.Get<IServiceAudioManager>().PlaySong(songData));
             await component.RespondAsync($"You've added '{selectedSong.Title}' to Queue", ephemeral: true);
-            await Task.Delay(SEARCH_RESULT_MSG_DELETE_MS);
+            // await Task.Delay(SEARCH_RESULT_MSG_DELETE_MS);
             await component.Message.DeleteAsync();
+            await component.Message.ModifyAsync((m)=> m.Content = "test");
         }
 
         private static Task Ev_Log(LogMessage msg)
