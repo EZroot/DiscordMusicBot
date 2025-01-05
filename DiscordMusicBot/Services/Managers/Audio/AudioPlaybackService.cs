@@ -8,6 +8,11 @@ using DiscordMusicBot.InternalCommands;
 using DiscordMusicBot.InternalCommands.CommandArgs.DiscordChat;
 using DiscordMusicBot.InternalCommands.CommandArgs.AudioPlayer;
 
+/*
+
+    TODO: REMOVE SLASHCOMMAND STUFF FROM THIS WHERE POSSIBLE
+    
+*/
 namespace DiscordMusicBot.Services.Managers.Audio
 {
     internal class AudioPlaybackService : IServiceAudioPlaybackService
@@ -16,56 +21,25 @@ namespace DiscordMusicBot.Services.Managers.Audio
         private readonly ThreadSafeSongQueue _audioQueuer = new ThreadSafeSongQueue();
         public int SongCount => _audioQueuer.SongCount;
 
-        public async Task PlaySong(SocketSlashCommand command)
+        public async Task<SongData?> PlaySong(string user, string url)
         {
-            await CheckAndJoinVoice(command);
-
-            var urlOption = command.Data.Options.First();
-            string videoUrl = urlOption?.Value?.ToString();
-            var user = command.User.Username;
-            
-            if (Service.Get<IServiceYtdlp>().IsYouTubeUrl(videoUrl))
-            {
-                await command.RespondAsync(text: $"Searching: `{videoUrl}`", ephemeral: true);
-                var songDetails = await Service.Get<IServiceYtdlp>().GetSongDetails(videoUrl);
-                await Service.Get<IServiceAnalytics>().AddSongAnalytics(user, new SongData { Title = songDetails.Title, Url = videoUrl, Length = songDetails.Length });
-                await command.ModifyOriginalResponseAsync((m) => m.Content = $"Added **{songDetails.Title}** to Queue!");
-                var songData = new SongData() { Id = "NA", Title = songDetails.Title, Url = videoUrl, Length = songDetails.Length };
-                await PlaySong(songData);
-                return;
-            }
-            else
-            {
-                Debug.Log($"<color=magenta>{user}:></color> <color=red>'{videoUrl}' Invalid url.</color>");
-                await command.RespondAsync(text: $"`{videoUrl}` is not a valid youtube url.", ephemeral: true);
-            }
+            var songDetails = await Service.Get<IServiceYtdlp>().GetSongDetails(url);
+            await QueueSongToPlay(songDetails);
+            return songDetails;
         }
 
-        public async Task PlaySong(SongData songData)
+        public async Task QueueSongToPlay(SongData song)
         {
-            await CommandHub.ExecuteCommand(new CmdSendAddSong(_audioClient, _audioQueuer, songData));
-
-
-            //It seems like this holds up the queue option, or something similar,
-            //we need to spawn stream to discord off in a new task, but we need to manage it as well...
-            
-            try
-            {
-                await Service.Get<IServiceYtdlp>().StreamToDiscord(_audioClient, songData.Url);
-            }
-            catch (Exception ex)
-            {
-                // Log exceptions that may occur during the streaming process
-                Debug.Log($"<color=red>Error during streaming the song:</color> Title = <color=cyan>{songData.Title}</color>, URL = <color=magenta>{songData.Url}</color>. <color=red>Exception: {ex.Message}</color>");
-            }
+            await CommandHub.ExecuteCommand(new CmdSendAddSong(_audioClient, _audioQueuer, song));
+            await PlayNextSong();
         }
 
-        public async Task PlayNextSong(IAudioClient client)
+        public async Task PlayNextSong()
         {
             await CommandHub.ExecuteCommand(new CmdSendPlayNextSong(_audioClient, _audioQueuer));
         }
 
-        public async Task SongQueue(SocketSlashCommand command)
+        public async Task GetCurrentSongQueue(SocketSlashCommand command)
         {
             var songArr = _audioQueuer.SongQueueArray;
             await CommandHub.ExecuteCommand(new CmdSendQueueResult(command, songArr));
@@ -73,10 +47,9 @@ namespace DiscordMusicBot.Services.Managers.Audio
 
         public async Task ShuffleQueue(SocketSlashCommand command)
         {
-            if(_audioQueuer.SongCount > 0)
+            if (_audioQueuer.SongCount > 0)
             {
                 await CommandHub.ExecuteCommand(new CmdSendShuffleQueue(_audioQueuer));
-                await command.RespondAsync("Queued has been shuffled!", ephemeral: true);
                 await CommandHub.ExecuteCommand(new CmdSendQueueResult(command, _audioQueuer.SongQueueArray));
                 return;
             }
@@ -97,17 +70,12 @@ namespace DiscordMusicBot.Services.Managers.Audio
         public async Task ChangeVolume(SocketSlashCommand command)
         {
             var option = command.Data.Options.First();
-            var volume = (string)option.Value;
-            if(double.TryParse(volume, out var volumeD))
-            {
-                await CommandHub.ExecuteCommand(new CmdSendSetVolume((float)volumeD));
-                await command.RespondAsync(text: $"Volume set: {volumeD.ToString("0")}/100", ephemeral: true);
-                return;
-            }
-            await command.RespondAsync(text: $"'{volume}' is invalid. Volume must be 0-100", ephemeral: true);
+            var volume = (float)(double)option.Value;
+            await CommandHub.ExecuteCommand(new CmdSendSetVolume((float)volume));
+            await command.RespondAsync(text: $"Volume set: {volume.ToString("0")}/100", ephemeral: true);
         }
 
-        public async Task CheckAndJoinVoice(SocketSlashCommand command)
+        public async Task JoinVoice(SocketSlashCommand command)
         {
             var user = command.User as IGuildUser;
             var voiceChannel = user?.VoiceChannel;
@@ -139,6 +107,13 @@ namespace DiscordMusicBot.Services.Managers.Audio
             await _audioClient.StopAsync();
             _audioClient = null;
             await command.RespondAsync(text: "Left voice channel.", ephemeral: true);
+        }
+
+        public Task ClearSong()
+        {
+            Debug.Log("Clearing song..");
+            _audioQueuer.CurrentPlayingSong = null;
+            return Task.CompletedTask;
         }
     }
 }

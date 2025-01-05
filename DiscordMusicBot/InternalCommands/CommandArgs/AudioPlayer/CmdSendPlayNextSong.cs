@@ -24,7 +24,8 @@ namespace DiscordMusicBot.InternalCommands.CommandArgs.AudioPlayer
 
         public async Task ExecuteAsync()
         {
-            if (_audioQueuer.SongCount == 0) { return; }
+            if (_audioQueuer.SongCount == 0 || _audioQueuer.CurrentPlayingSong != null) { return; }
+            Debug.Log("<color=blue>Unqueueing song!");
             _audioQueuer.CurrentPlayingSong = _audioQueuer.Dequeue();
             if (_audioQueuer.CurrentPlayingSong != null)
             {
@@ -32,7 +33,7 @@ namespace DiscordMusicBot.InternalCommands.CommandArgs.AudioPlayer
                 var formatTitle = title.Length > 50 ? title.Substring(0, 42) : title;
                 Debug.Log($"<color=magenta>Attempting to play</color>: <color=white>{formatTitle} [{_audioQueuer.CurrentPlayingSong.Value.Length}]</color>");
                 EventHub.Raise(new EvOnPlayNextSong() { Title = _audioQueuer.CurrentPlayingSong.Value.Title, Url = _audioQueuer.CurrentPlayingSong.Value.Url, Length = _audioQueuer.CurrentPlayingSong.Value.Length });
-                await Service.Get<IServiceYtdlp>().StreamToDiscord(_client, _audioQueuer.CurrentPlayingSong.Value.Url);
+                _ = Task.Run(async () => await Service.Get<IServiceYtdlp>().StreamToDiscord(_client, _audioQueuer.CurrentPlayingSong.Value.Url));
             }
         }
 

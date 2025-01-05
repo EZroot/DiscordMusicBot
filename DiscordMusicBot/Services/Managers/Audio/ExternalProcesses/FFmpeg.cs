@@ -45,7 +45,7 @@ namespace DiscordMusicBot.Services.Managers.Audio.ExternalProcesses
                     EventHub.Raise(new EvOnFFmpegExit());
                     _ffmpegProcess.Dispose();
                     _ffmpegProcess = null;
-                    Service.Get<IServiceAudioPlaybackService>().PlayNextSong(client);
+                    Service.Get<IServiceAudioPlaybackService>().PlayNextSong();
                 };
 
                 var output = _ffmpegProcess.StandardOutput.BaseStream;

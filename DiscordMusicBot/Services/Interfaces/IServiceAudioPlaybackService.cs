@@ -6,14 +6,15 @@ namespace DiscordMusicBot.Services.Interfaces
     internal interface IServiceAudioPlaybackService : IService
     {
         int SongCount { get; }
-        Task PlaySong(SocketSlashCommand command);
-        Task PlaySong(SongData songData);
-        Task PlayNextSong(IAudioClient client);
-        Task SongQueue(SocketSlashCommand command);
+        Task ClearSong();
+        Task<SongData?> PlaySong(string user, string url);
+        Task QueueSongToPlay(SongData song);
+        Task PlayNextSong();
+        Task GetCurrentSongQueue(SocketSlashCommand command);
         Task ShuffleQueue(SocketSlashCommand command);
         Task SkipSong(SocketSlashCommand command);
         Task ChangeVolume(SocketSlashCommand command);
-        Task CheckAndJoinVoice(SocketSlashCommand command);
+        Task JoinVoice(SocketSlashCommand command);
         Task LeaveVoice(SocketSlashCommand command);
     }
 }

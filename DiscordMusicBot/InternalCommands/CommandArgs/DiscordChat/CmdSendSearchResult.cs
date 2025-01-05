@@ -31,7 +31,7 @@ namespace DiscordMusicBot.InternalCommands.CommandArgs.DiscordChat
             var user = _command.User;
 
             await _command.RespondAsync($"Thinking ...", ephemeral: false);
-            await audioManager.CheckAndJoinVoice(_command);
+            await audioManager.JoinVoice(_command);
 
             var result = await Service.Get<IServiceYtdlp>().SearchYoutube(arg);
             if (result == null || result.Count == 0)

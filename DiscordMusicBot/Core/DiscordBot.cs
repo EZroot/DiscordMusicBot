@@ -20,7 +20,7 @@ namespace DiscordMusicBot.Core
 
         public DiscordBot()
         {
-            
+
         }
         
         public async Task Initialize()
@@ -94,9 +94,11 @@ namespace DiscordMusicBot.Core
             Debug.Log($"<color=red>{user.Username}</color> <color=white>picked song</color> <color=cyan>{formatTitle}#</color>");
             
             var songData = new SongData() { Title = selectedSong.Title, Url = selectedSong.Url, Length = selectedSong.Length };
-            _ = Task.Run(async () => await Service.Get<IServiceAudioPlaybackService>().PlaySong(songData));
+            await Service.Get<IServiceAudioPlaybackService>().QueueSongToPlay(songData);
+            
             await component.RespondAsync($"You've added '{selectedSong.Title}' to Queue", ephemeral: true);
             // await Task.Delay(SEARCH_RESULT_MSG_DELETE_MS);
+            //Create some kind of queue that will queue delete the message history too, this should help with timeouts if we react too many times
             await component.Message.DeleteAsync();
             await component.Message.ModifyAsync((m)=> m.Content = "test");
         }
@@ -122,10 +124,11 @@ namespace DiscordMusicBot.Core
                 });
             });
 
-            EventHub.Subscribe<EvOnFFmpegExit>((a) =>
+            EventHub.Subscribe<EvOnFFmpegExit>(async (a) =>
             {
+                await Service.Get<IServiceAudioPlaybackService>().ClearSong();
                 if (Service.Get<IServiceAudioPlaybackService>().SongCount > 0) return;
-                Task.Run(async () =>
+                _ = Task.Run(async () =>
                 {
                     if (_client == null) return;
                     await UpdateBotStatus();
@@ -136,7 +139,8 @@ namespace DiscordMusicBot.Core
             {
                 Task.Run(async () =>
                 {
-                    var title = a.Title;
+                    var song = new SongData() { Title = a.Title, Url = a.Url, Length = a.Length };
+                    var title = song.Title;
                     var formatTitle = title.Length > 50 ? title.Substring(0,42) : title;
                     Debug.Log($"<color=magenta>Playing</color>: <color=white>{formatTitle}</color>");
                     if (_client == null) return;

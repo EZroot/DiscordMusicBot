@@ -31,18 +31,18 @@ namespace DiscordMusicBot.InternalCommands.CommandArgs.AudioPlayer
             //you can see it happen if you remove the streaming from audiomanager, and just queue up songs normally
             var song = new SongData { Title = _song.Title, Url = _song.Url, Length = _song.Length };
             _audioQueuer.Enqueue(song);
-            Debug.Log($"AudioQueue: Added to queue: {song.Title} {song.Url}");
-            if (_audioQueuer.SongCount == 1 && !Service.Get<IServiceFFmpeg>().IsSongPlaying)
-            {
-                _audioQueuer.CurrentPlayingSong = _audioQueuer.Dequeue();
-                Debug.Log("If you see this multiple times we got a problem");
-                if (_audioQueuer.CurrentPlayingSong != null)
-                {
-                    var formatTitle = _song.Title.Length > 50 ? _song.Title.Substring(0, 42) : _song.Title;
-                    Debug.Log($"<color=magenta>Unqueued & attempting to play</color>: <color=white>{formatTitle} [{_audioQueuer.CurrentPlayingSong.Value.Length}]</color>");
-                    EventHub.Raise(new EvOnPlayNextSong() { Title = _audioQueuer.CurrentPlayingSong.Value.Title, Url = _audioQueuer.CurrentPlayingSong.Value.Url, Length = _audioQueuer.CurrentPlayingSong.Value.Length });
-                }
-            }
+            Debug.Log($"<color=green>AudioQueue: Added to queue: {song.Title} {song.Url}");
+            // if (_audioQueuer.SongCount == 1 && !Service.Get<IServiceFFmpeg>().IsSongPlaying)
+            // {
+            //     _audioQueuer.CurrentPlayingSong = _audioQueuer.Dequeue();
+            //     Debug.Log("If you see this multiple times we got a problem");
+            //     if (_audioQueuer.CurrentPlayingSong != null)
+            //     {
+            //         var formatTitle = _song.Title.Length > 50 ? _song.Title.Substring(0, 42) : _song.Title;
+            //         Debug.Log($"<color=magenta>Unqueued & attempting to play</color>: <color=white>{formatTitle} [{_audioQueuer.CurrentPlayingSong.Value.Length}]</color>");
+            //         EventHub.Raise(new EvOnPlayNextSong() { Title = _audioQueuer.CurrentPlayingSong.Value.Title, Url = _audioQueuer.CurrentPlayingSong.Value.Url, Length = _audioQueuer.CurrentPlayingSong.Value.Length });
+            //     }
+            // }
             await Task.CompletedTask;
         }
 

@@ -46,10 +46,12 @@ namespace DiscordMusicBot.Services.Managers.Audio
             {
                 lock (_queueLock)
                 {
-                    var result = new SongData[_songQueue.Count + 1];
+                    var countIncrement = _currentPlayingSong != null ? 1 : 0; 
+                    var result = new SongData[_songQueue.Count + countIncrement];
 
                     // Put the current song at index 0 (if it’s non-null)
                     if (_currentPlayingSong != null)
+                    {
                         result[0] = new SongData()
                         {
                             Id = _currentPlayingSong.Value.Id,
@@ -57,9 +59,9 @@ namespace DiscordMusicBot.Services.Managers.Audio
                             Url = _currentPlayingSong.Value.Url,
                             Length = _currentPlayingSong.Value.Length
                         };
+                    }
 
-                    // Copy the queue songs starting at index 1
-                    _songQueue.ToArray().CopyTo(result, 1);
+                    _songQueue.ToArray().CopyTo(result, countIncrement);
                     return result;
                 }
             }
@@ -67,10 +69,8 @@ namespace DiscordMusicBot.Services.Managers.Audio
 
         public void Enqueue(SongData song)
         {
-            Utils.Debug.Log("AQ: Waiting for queue lock...");
             lock (_queueLock)
             {
-                Utils.Debug.Log($"AQ: Added to queue: {song.Title} {song.Url}");
                 _songQueue.Enqueue(song);
             }
         }
