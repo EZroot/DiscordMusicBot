@@ -34,9 +34,9 @@ namespace DiscordMusicBot.Commands.CommandArgs.DiscordChat
             await audioManager.CheckAndJoinVoice(_command);
 
             var result = await Service.Get<IServiceYtdlp>().SearchYoutube(arg);
-            if (result == null)
+            if (result == null || result.Count == 0)
             {
-                await _command.ModifyOriginalResponseAsync((m) => m.Content = "Error failed to search youtube.");
+                await _command.ModifyOriginalResponseAsync((m) => m.Content = "Error: Failed to search youtube. Please try again.");
                 return;
             }
 
