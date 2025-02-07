@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.Net.Http.Headers;
+using Discord;
 using Discord.WebSocket;
 using DiscordMusicBot.Events;
 using DiscordMusicBot.Events.EventArgs;
@@ -41,14 +42,27 @@ namespace DiscordMusicBot.Core
 
             var botData = Service.Get<IServiceDataManager>().LoadConfig();
             Debug.Initialize(botData.DebugMode);
+            var tokenValid = await IsTokenValid(botData.ApiKey);
+            if (tokenValid)
+            {
+                await _client.LoginAsync(TokenType.Bot, botData.ApiKey);
+                await _client.StartAsync();
 
-            await _client.LoginAsync(TokenType.Bot, botData.ApiKey);
-            await _client.StartAsync();
+                await UpdateBotStatus();
 
-            await UpdateBotStatus();
+                // Block this task
+                await Task.Delay(-1);
+            }
 
-            // Block this task
-            await Task.Delay(-1);
+            Debug.Log($"Token invalid. Token:{botData.ApiKey}");
+        }
+        
+        public async Task<bool> IsTokenValid(string token)
+        {
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", token);
+            var response = await client.GetAsync("https://discord.com/api/v10/users/@me");
+            return response.IsSuccessStatusCode;
         }
 
         private async Task Ev_ClientReady()
@@ -97,7 +111,7 @@ namespace DiscordMusicBot.Core
 
             try
             {
-                await Service.Get<IServiceAnalytics>().AddSongAnalytics(user.Username, songData);
+                await Service.Get<IServiceAnalytics>().AddSongAnalyticsAsync(user.Username, songData);
             }
             catch (Exception e)
             {

@@ -19,7 +19,7 @@ namespace DiscordMusicBot.InternalCommands.CommandArgs.DiscordChat
         public async Task ExecuteAsync()
         {
            var analytics = Service.Get<IServiceAnalytics>();
-            var recentHistory = analytics.AnalyticData.RecentSongHistory;
+            var recentHistory = analytics.GetRecentSongs();
             if (recentHistory == null || recentHistory.Count == 0)
             {
                 await _command.RespondAsync(text: $"There are no songs in recent history.", ephemeral: true);

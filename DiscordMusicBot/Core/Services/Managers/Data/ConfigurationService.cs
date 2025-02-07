@@ -24,7 +24,7 @@ namespace DiscordMusicBot.Services.Managers.Data
             var result = new AnalyticData
             {
                 GlobalMostPlayedSongs = analytics.GlobalMostPlayedSongs,
-                UserAnalyticData = analytics.UserAnalyticData,
+                UserAnalytics = analytics.UserAnalytics,
                 RecentSongHistory = analytics.RecentSongHistory
             };
             return result;

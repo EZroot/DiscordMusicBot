@@ -35,7 +35,8 @@ namespace DiscordMusicBot.SlashCommands.Commands
 
                 try
                 {
-                    await Service.Get<IServiceAnalytics>().AddSongAnalytics(user, song.Value);
+                    if(song != null)
+                        await Service.Get<IServiceAnalytics>().AddSongAnalyticsAsync(user, song.Value);
                 }
                 catch(Exception e)
                 {

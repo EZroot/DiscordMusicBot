@@ -17,4 +17,15 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="includes\libsodium.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>libsodium.dll</Link>
+    </Content>
+    <Content Include="includes\opus.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>opus.dll</Link>
+    </Content>
+  </ItemGroup>
+
 </Project>

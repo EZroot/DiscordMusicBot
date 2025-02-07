@@ -22,7 +22,7 @@ namespace DiscordMusicBot.InternalCommands.CommandArgs.DiscordChat
         public async Task ExecuteAsync()
         {
             var analytics = Service.Get<IServiceAnalytics>();
-            var mostPlayedHistory = analytics.AnalyticData.GlobalMostPlayedSongs;
+            var mostPlayedHistory = analytics.GetTopGlobalSongs();
             if (mostPlayedHistory == null || mostPlayedHistory.Count == 0)
             {
                 await _command.RespondAsync(text: $"There have been no songs recorded yet.", ephemeral: true);
@@ -34,18 +34,17 @@ namespace DiscordMusicBot.InternalCommands.CommandArgs.DiscordChat
                 .WithDescription("A list of the most played songs of the bots life")
                 .WithColor(Color.Blue);
 
-            foreach(var kvp in mostPlayedHistory)
+            foreach(var sad in mostPlayedHistory)
             {
-                var val = kvp.Value;
                 
-                var length = val.SongData.Length;
+                var length = sad.SongData.Length;
                 if (length == "NA") 
                     length = "LIVE!";
                 else
                     length = FormatHelper.FormatLengthWithDescriptor(length);
 
-                embedBuilder.AddField($"[{val.NumberOfPlays}] {val.SongData.Title}",
-                 $"[{val.SongData.Url.Replace("https://","")}]({val.SongData.Url}) [{length}]", inline: true);
+                embedBuilder.AddField($"[{sad.NumberOfPlays}] {sad.SongData.Title}",
+                 $"[{sad.SongData.Url.Replace("https://","")}]({sad.SongData.Url}) [{length}]", inline: true);
             }
             await _command.RespondAsync(embed: embedBuilder.Build(), ephemeral: true);
         }
