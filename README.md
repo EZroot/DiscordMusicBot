@@ -22,12 +22,18 @@ For educational purposes, of course.
 6. **Run the bot!**
 
 ## 🌐 Bot Commands
-/play 'url' - play youtube url directly
-/search 'search' - search and return top youtube results
-/skip - skips current song
-/shuffle - shuffles current queue
-/queue - displays current queue
-/leave - leave voice channel
+- /play 'url' - play youtube url directly
+
+- /search 'search' - search and return top youtube results
+
+- /skip - skips current song
+
+- /shuffle - shuffles current queue
+
+- /queue - displays current queue
+
+- /leave - leave voice channel
+
 ## 📝 Support 
 
 If you encounter any issues with the bot, please create an issue or search online for solutions.
