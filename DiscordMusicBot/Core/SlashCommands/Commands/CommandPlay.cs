@@ -4,6 +4,7 @@ using DiscordMusicBot.SlashCommands.Interfaces;
 using DiscordMusicBot.Services;
 using DiscordMusicBot.Services.Interfaces;
 using DiscordMusicBot.Utils;
+using DiscordMusicBot.Core.Utils;
 
 namespace DiscordMusicBot.SlashCommands.Commands
 {
@@ -24,6 +25,7 @@ namespace DiscordMusicBot.SlashCommands.Commands
         {
             var urlOption = command.Data.Options.First();
             string videoUrl = urlOption?.Value?.ToString();
+            videoUrl = UrlHelper.RemoveQueryString(videoUrl);
             var user = command.User.Username;
             
             await Service.Get<IServiceAudioPlaybackService>().JoinVoice(command);
