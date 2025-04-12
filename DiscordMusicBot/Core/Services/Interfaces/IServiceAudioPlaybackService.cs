@@ -13,8 +13,10 @@ namespace DiscordMusicBot.Services.Interfaces
         Task GetCurrentSongQueue(SocketSlashCommand command);
         Task ShuffleQueue(SocketSlashCommand command);
         Task SkipSong(SocketSlashCommand command);
+        Task SkipSongRaw();
         Task ChangeVolume(SocketSlashCommand command);
         Task JoinVoice(SocketSlashCommand command);
+        Task LeaveVoiceRaw();
         Task LeaveVoice(SocketSlashCommand command);
     }
 }

@@ -19,6 +19,7 @@ namespace DiscordMusicBot.Core
         private DiscordSocketClient? _client;
         public DiscordSocketClient? Client => _client;
 
+        bool _hasConnected = false;
         public DiscordBot()
         {
 
@@ -36,7 +37,7 @@ namespace DiscordMusicBot.Core
             _client.Connected += SubscribeToEvents;
             _client.Disconnected += UnsubscribeToEvents;
             _client.ButtonExecuted += Ev_ButtonExecutedAsync;
-
+            
             new BotTimer(BOT_LOOP_TIMER_MS);
             await Service.Get<IServiceAnalytics>().InitializeAsync();
 
@@ -49,7 +50,8 @@ namespace DiscordMusicBot.Core
                 await _client.StartAsync();
 
                 await UpdateBotStatus();
-
+                _hasConnected = true;
+                await Service.Get<IServiceAudioPlaybackService>().SkipSongRaw();
                 // Block this task
                 await Task.Delay(-1);
             }
@@ -145,6 +147,10 @@ namespace DiscordMusicBot.Core
                     if (_client == null) return;
                     if (Service.Get<IServiceFFmpeg>().IsSongPlaying) return;
                     await UpdateBotStatus();
+                    if(_hasConnected == false)
+                    {
+                        await Initialize();
+                    }
                 });
             });
 
@@ -177,6 +183,9 @@ namespace DiscordMusicBot.Core
 
         private async Task UnsubscribeToEvents(Exception exception)
         {
+            _hasConnected = false;
+            await Service.Get<IServiceAudioPlaybackService>().ClearSong();
+            await Service.Get<IServiceAudioPlaybackService>().LeaveVoiceRaw();
             EventHub.Unsubscribe<EvOnFFmpegExit>((a) => { Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
             EventHub.Unsubscribe<EvOnPlayNextSong>((a) => { Debug.Log("Unsubscribed from event EvOnFFmpegExit"); });
             await Task.CompletedTask;

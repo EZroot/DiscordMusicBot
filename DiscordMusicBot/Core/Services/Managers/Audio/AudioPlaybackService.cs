@@ -57,6 +57,15 @@ namespace DiscordMusicBot.Services.Managers.Audio
             await command.RespondAsync("There are no songs available to shuffle...", ephemeral: true);
         }
 
+        public async Task SkipSongRaw()
+        {
+            if (Service.Get<IServiceFFmpeg>().ForceClose())
+            {
+                Debug.Log("Skipped song FUCKING RAWWWWW");
+                return;
+            }
+        }
+
         public async Task SkipSong(SocketSlashCommand command)
         {
             if (Service.Get<IServiceFFmpeg>().ForceClose())
@@ -107,6 +116,13 @@ namespace DiscordMusicBot.Services.Managers.Audio
             await _audioClient.StopAsync();
             _audioClient = null;
             await command.RespondAsync(text: "Left voice channel.", ephemeral: true);
+        }
+
+        public async Task LeaveVoiceRaw()
+        {
+            if (_audioClient == null) return;
+            await _audioClient.StopAsync();
+            _audioClient = null;
         }
 
         public Task ClearSong()
