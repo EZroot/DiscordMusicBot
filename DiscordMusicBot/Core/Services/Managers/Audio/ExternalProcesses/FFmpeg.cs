@@ -37,7 +37,7 @@ namespace DiscordMusicBot.Services.Managers.Audio.ExternalProcesses
 
         public async Task StreamToDiscord(IAudioClient client, string url)
         {
-            Debug.Log($"<color=cyan>Entering FFmpeg StreamToDiscord with URL: {url}</color>");
+            //Debug.Log($"<color=cyan>Entering FFmpeg StreamToDiscord with URL: {url}</color>");
             if (_ffmpegProcess != null)
             {
                 Debug.Log("<color=yellow>ffmpeg process already running. Aborting new stream.</color>");
@@ -46,7 +46,7 @@ namespace DiscordMusicBot.Services.Managers.Audio.ExternalProcesses
 
             try
             {
-                Debug.Log($"<color=cyan>Creating FFmpeg process for URL: {url}</color>");
+                //Debug.Log($"<color=cyan>Creating FFmpeg process for URL: {url}</color>");
                 _ffmpegProcess = ProcessHelper.CreateStream(url);
                 Debug.Log("<color=cyan>FFmpeg process created successfully.</color>");
 
@@ -70,10 +70,10 @@ namespace DiscordMusicBot.Services.Managers.Audio.ExternalProcesses
                     int bytesRead;
                     while ((bytesRead = await output.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
-                        Debug.Log($"<color=cyan>Read {bytesRead} bytes from FFmpeg output.</color>");
+                        //Debug.Log($"<color=cyan>Read {bytesRead} bytes from FFmpeg output.</color>");
                         AdjustVolume(buffer, bytesRead, _volume);
                         await discord.WriteAsync(buffer, 0, bytesRead);
-                        Debug.Log($"<color=cyan>Wrote {bytesRead} bytes to Discord stream.</color>");
+                        //Debug.Log($"<color=cyan>Wrote {bytesRead} bytes to Discord stream.</color>");
                     }
                     Debug.Log("<color=cyan>Completed streaming; flushing Discord stream.</color>");
                     await discord.FlushAsync();
@@ -97,7 +97,7 @@ namespace DiscordMusicBot.Services.Managers.Audio.ExternalProcesses
         // Adjust bytes to represent volume
         private void AdjustVolume(byte[] buffer, int bytesRead, float volume)
         {
-            Debug.Log($"<color=cyan>Adjusting volume for {bytesRead} bytes with volume {volume}.</color>");
+            //Debug.Log($"<color=cyan>Adjusting volume for {bytesRead} bytes with volume {volume}.</color>");
             for (int i = 0; i < bytesRead; i += 2)
             {
                 short sample = BitConverter.ToInt16(buffer, i);
@@ -112,7 +112,7 @@ namespace DiscordMusicBot.Services.Managers.Audio.ExternalProcesses
                 buffer[i] = bytes[0];
                 buffer[i + 1] = bytes[1];
             }
-            Debug.Log("<color=cyan>Volume adjustment completed for current buffer.</color>");
+            //Debug.Log("<color=cyan>Volume adjustment completed for current buffer.</color>");
         }
     }
 }

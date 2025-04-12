@@ -90,7 +90,7 @@ namespace DiscordMusicBot.Services.Managers.Audio.ExternalProcesses
 
         public async Task StreamToDiscord(IAudioClient client, string videoUrl)
         {
-            Debug.Log($"<color=cyan>Entering StreamToDiscord with videoUrl: {videoUrl}</color>");
+            //Debug.Log($"<color=cyan>Entering StreamToDiscord with videoUrl: {videoUrl}</color>");
             var process = "yt-dlp";
             var args = $"-f bestaudio -g {videoUrl}";
             Debug.Log($"<color=cyan>Starting yt-dlp process for streaming with arguments: {args}</color>");
