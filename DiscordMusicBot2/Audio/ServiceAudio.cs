@@ -4,12 +4,14 @@ using Discord.WebSocket;
 using DiscordMusicBot2.Audio.Interface;
 using DiscordMusicBot2.Data;
 using DiscordMusicBot2.Events;
+using DiscordMusicBot2.Helpers;
 using System.Diagnostics;
 
 namespace DiscordMusicBot2.Audio
 {
     internal class ServiceAudio : IServiceAudio
     {
+        private const int MINUTE_THRESHOLD_TO_PLAY_LIVE = 8; //8 minutes
         private IAudioClient? m_audioClient;
         private SongData? m_currentPlayingSong = null;
         private SongBuffer m_songBuffer;
@@ -81,7 +83,11 @@ namespace DiscordMusicBot2.Audio
                 return;
             }
 
-            m_songBuffer.AddSongToQueue(new SongData(0, "random", youtubeUrl, "99:99"));
+            var songDetails = await YoutubeHelper.GetVideoDetails(youtubeUrl);
+            var title = songDetails[0];
+            var length = songDetails[1];
+
+            m_songBuffer.AddSongToQueue(new SongData(0, title, youtubeUrl, length));
 
             await StartNextSong();
         }
@@ -99,7 +105,28 @@ namespace DiscordMusicBot2.Audio
                 if (m_currentPlayingSong != null)
                 {
                     Debug.Log($"Playing song: {m_currentPlayingSong.Name}");
-                    await m_playbackManager.PlayAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
+                    
+                    var parsedDuration = YoutubeHelper.ParseDuration(m_currentPlayingSong.Duration);
+                    var aboveMinuteThreshold = false;
+                    if(parsedDuration != null)
+                        aboveMinuteThreshold = parsedDuration.Value.Minutes > MINUTE_THRESHOLD_TO_PLAY_LIVE;
+
+                    //Live streams
+                    if (string.IsNullOrEmpty(m_currentPlayingSong.Duration) || aboveMinuteThreshold)
+                    {
+                        Debug.Log("<color=cyan>Live streaming the song...");
+                        if(m_currentPlayingSong.Url.Contains("youtube") || m_currentPlayingSong.Url.Contains("youtu.be"))
+                            await m_playbackManager.PlayLiveYoutubeAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
+                        else
+                            await m_playbackManager.PlayLiveAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
+                    }
+                    //Normal songs
+                    else
+                    {
+                        Debug.Log("<color=cyan>Predownloading song...");
+                        //await m_playbackManager.PlayAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
+                        await m_playbackManager.PlayLiveYoutubeAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
+                    }
                 }
                 else
                 {
