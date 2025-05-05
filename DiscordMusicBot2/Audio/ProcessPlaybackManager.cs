@@ -18,7 +18,7 @@ namespace DiscordMusicBot2.Audio
         private const bool DEBUG_MODE = true;
 
         private const int AUDIO_BYTE_SIZE = 8192;    // ~40 ms @48 kHz stereo
-        private float m_volume = 0.15f;
+        private float m_volume = 0.1f;
 
         private readonly object m_threadGate = new();
         private readonly IAudioClient m_audioClient;
@@ -191,6 +191,7 @@ namespace DiscordMusicBot2.Audio
                     Arguments =
                         "-hide_banner -loglevel info -nostdin " +
                         "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 " +
+                        "-re " +  // <── Throttle FFmpeg to real-time
                         $"-i \"{mediaUrl}\" " +
                         "-ac 2 -ar 48000 -f s16le pipe:1",
                     UseShellExecute = false,
@@ -283,6 +284,7 @@ namespace DiscordMusicBot2.Audio
                     FileName = "ffmpeg",
                     Arguments = "-hide_banner -loglevel info -nostdin " +
                                 "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 " +
+                                "-re " +  // <── Throttle FFmpeg to real-time
                                 $"-i \"{streamUrl}\" -ac 2 -ar 48000 -f s16le pipe:1",
                     UseShellExecute = false,
                     CreateNoWindow = true,

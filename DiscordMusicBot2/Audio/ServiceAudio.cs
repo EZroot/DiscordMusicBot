@@ -125,7 +125,7 @@ namespace DiscordMusicBot2.Audio
                     {
                         Debug.Log("<color=cyan>Predownloading song...");
                         //await m_playbackManager.PlayAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
-                        await m_playbackManager.PlayLiveYoutubeAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
+                        await m_playbackManager.PlayAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
                     }
                 }
                 else
