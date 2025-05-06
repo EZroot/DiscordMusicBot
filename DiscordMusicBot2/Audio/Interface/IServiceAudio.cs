@@ -12,6 +12,6 @@ namespace DiscordMusicBot2.Audio.Interface
         Task LeaveCurrentVoiceChannel(IVoiceChannel voiceChannel);
         Task Play(string url);
         Task Skip();
-        Task ChangeVolume(float vol);
+        Task<bool> ChangeVolume(float vol);
     }
 }

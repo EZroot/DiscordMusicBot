@@ -23,8 +23,9 @@ namespace DiscordMusicBot2.Chat.Commands
 
         public async Task ExecuteAsync(SocketSlashCommand options)
         {
+            await options.DeferAsync(ephemeral:true);
             await Service.Get<IServiceAudio>().Skip();
-            await options.RespondAsync(text: "Skipped the current track!", ephemeral: true);
+            await options.FollowupAsync(text: "Skipped the current track!", ephemeral: true);
         }
     }
 }

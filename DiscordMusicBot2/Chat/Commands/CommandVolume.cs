@@ -28,9 +28,15 @@ namespace DiscordMusicBot2.Chat.Commands
         {
             var option = command.Data.Options.First();
             var volume = (float)(double)option.Value;
-            await Service.Get<IServiceAudio>().ChangeVolume(volume);
-            await command.RespondAsync(CommandName + " executed", ephemeral: true);
+            var result = await Service.Get<IServiceAudio>().ChangeVolume(volume);
+            if (result)
+            {
+                await command.RespondAsync(CommandName + " executed", ephemeral: true);
+            }
+            else
+            {
+                await command.RespondAsync("I need to be in voice before you can change my volume.", ephemeral: true);
+            }
         }
-
     }
 }

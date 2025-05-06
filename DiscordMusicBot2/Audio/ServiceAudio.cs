@@ -17,7 +17,7 @@ namespace DiscordMusicBot2.Audio
         private SongBuffer m_songBuffer;
         private ProcessPlaybackManager m_playbackManager;
 
-        public List<SongData> SongDataList => m_songBuffer.m_songBuffer.ToList();
+        public List<SongData> SongDataList => m_songBuffer.m_songBufferQueue.ToList();
 
         public ServiceAudio()
         {
@@ -28,8 +28,9 @@ namespace DiscordMusicBot2.Audio
 
         private void OnSongFinished(OnSongFinishedEvent @event)
         {
-            m_currentPlayingSong = null;
-            _ = StartNextSong();
+            _ = Skip();
+            //m_currentPlayingSong = null;
+            //_ = StartNextSong();
         }
 
         /// <summary>
@@ -92,16 +93,31 @@ namespace DiscordMusicBot2.Audio
             await StartNextSong();
         }
 
-        public async Task ChangeVolume(float vol)
+        public async Task<bool> ChangeVolume(float vol)
         {
+            if(m_playbackManager == null)
+            {
+                Debug.Log("<color=red>Playback manager is not initialized.</color>");
+                return false;
+            }
             await m_playbackManager.SetVolume(vol);
+            return true;
         }
 
         private async Task StartNextSong()
         {
+            Debug.Log($"Start Next Song Called: Count - {m_songBuffer.m_songBufferQueue.Count} - CurrentPlayingSongNull {m_currentPlayingSong == null}");
+            if(m_currentPlayingSong != null)
+            {
+                Debug.Log($"WHAT THE FUCK - current playing song is {m_currentPlayingSong.Name}");
+            }
+
             if (m_currentPlayingSong == null)
             {
+                Debug.Log("Trying to start next song");
+
                 m_currentPlayingSong = m_songBuffer.GetSongFromQueue();
+
                 if (m_currentPlayingSong != null)
                 {
                     Debug.Log($"Playing song: {m_currentPlayingSong.Name}");
@@ -116,7 +132,7 @@ namespace DiscordMusicBot2.Audio
                     {
                         Debug.Log("<color=cyan>Live streaming the song...");
                         if(m_currentPlayingSong.Url.Contains("youtube") || m_currentPlayingSong.Url.Contains("youtu.be"))
-                            await m_playbackManager.PlayLiveYoutubeAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
+                            await m_playbackManager.PlayLiveYoutubeAsync(m_currentPlayingSong.Url, true).ConfigureAwait(false);
                         else
                             await m_playbackManager.PlayLiveAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
                     }
@@ -138,7 +154,6 @@ namespace DiscordMusicBot2.Audio
                 Debug.Log("<color=red>Already playing a song. Cannot play another one.</color>");
             }
         }
-
 
         /// <summary>
         /// Skip the song currently playing

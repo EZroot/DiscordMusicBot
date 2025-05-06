@@ -1,10 +1,6 @@
 ﻿using Discord.Audio;
 using DiscordMusicBot2.Events;
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace DiscordMusicBot2.Audio
 {
@@ -96,7 +92,7 @@ namespace DiscordMusicBot2.Audio
             };
             m_ffmpeg.Start();
             //_ = PumpStdoutAsync(m_ffmpeg, "ffmpeg");
-            //_ = PumpStderrAsync(m_ffmpeg, "ffmpeg");
+            _ = PumpStderrAsync(m_ffmpeg, "ffmpeg");
 
             // 3) Pre‑buffer to avoid underflow
             const int PREBUFFER_SECONDS = 5;
@@ -155,7 +151,7 @@ namespace DiscordMusicBot2.Audio
         /// Live‐streams a YouTube URL by resolving its direct audio URL with yt-dlp,
         /// then feeding that URL into ffmpeg → Discord with a pre‐buffer.
         /// </summary>
-        public async Task PlayLiveYoutubeAsync(string youtubeUrl)
+        public async Task PlayLiveYoutubeAsync(string youtubeUrl, bool usePrebuffer = true)
         {
             Stop();
             m_cts = new CancellationTokenSource();
@@ -167,21 +163,29 @@ namespace DiscordMusicBot2.Audio
                 var getUrlInfo = new ProcessStartInfo
                 {
                     FileName = "yt-dlp",
-                    Arguments = $"--no-playlist -f \"bestaudio[abr<=128]\" -g \"{youtubeUrl}\"",
+                    Arguments = $"--no-playlist -g \"{youtubeUrl}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
+                    RedirectStandardError = true,                   
                 };
+                Debug.Log("Staring yt-dlp process..");
+
                 using var proc = Process.Start(getUrlInfo)
                                ?? throw new InvalidOperationException("Could not start yt-dlp");
+
+                Debug.Log("Trying to get media url...");
+
                 mediaUrl = (await proc.StandardOutput.ReadLineAsync().ConfigureAwait(false))?.Trim()
                            ?? throw new InvalidOperationException("yt-dlp returned no URL");
+
+                Debug.Log("Wait for exit async...");
+
                 await proc.WaitForExitAsync(ct).ConfigureAwait(false);
                 if (proc.ExitCode != 0)
                     throw new InvalidOperationException("yt-dlp failed to extract URL");
             }
-
+            Debug.Log("Trying to launchg ffmpeg with media url...");
             // 2) Spawn FFmpeg reading directly from that media URL
             m_ffmpeg = new Process
             {
@@ -214,35 +218,44 @@ namespace DiscordMusicBot2.Audio
                 _ = PumpStderrAsync(m_ffmpeg, "ffmpeg");
             }
 
-            // 3) Pre‐buffer ~5 seconds exactly the same as your other methods
-            const int PREBUFFER_SECONDS = 5;
-            int prebufferBytes = 48000/*Hz*/ * 2/*ch*/ * 2/*bytes*/ * PREBUFFER_SECONDS;
-            using var lookahead = new MemoryStream();
-            var buffer = new byte[AUDIO_BYTE_SIZE];
-            int buffered = 0;
-
-            while (buffered < prebufferBytes)
+            // 3 & 4) Optional Pre-buffer
+            MemoryStream? lookahead = null;
+            byte[] buffer = new byte[AUDIO_BYTE_SIZE];
+            if (usePrebuffer)
             {
-                int read = await m_ffmpeg.StandardOutput.BaseStream
-                                 .ReadAsync(buffer, 0, buffer.Length, ct)
-                                 .ConfigureAwait(false);
-                if (read <= 0) break;
-                lookahead.Write(buffer, 0, read);
-                buffered += read;
-            }
-            lookahead.Position = 0;
+                const int PREBUFFER_SECONDS = 5;
+                int prebufferBytes = 48000 /*Hz*/ * 2 /*ch*/ * 2 /*bytes*/ * PREBUFFER_SECONDS;
+                lookahead = new MemoryStream();
+                int buffered = 0;
 
-            // 4) Create the Discord stream & drain the pre‐buffer
+                while (buffered < prebufferBytes)
+                {
+                    int read = await m_ffmpeg.StandardOutput.BaseStream
+                                     .ReadAsync(buffer, 0, buffer.Length, ct)
+                                     .ConfigureAwait(false);
+                    if (read <= 0) break;
+                    lookahead.Write(buffer, 0, read);
+                    buffered += read;
+                }
+                lookahead.Position = 0;
+            }
+
+            // 5) Create the Discord stream & drain pre-buffer if present
             var discordStream = m_audioClient.CreatePCMStream(AudioApplication.Music);
             m_discord = discordStream;
-            while (lookahead.Position < lookahead.Length)
+
+            if (lookahead is not null)
             {
-                int read = lookahead.Read(buffer, 0, buffer.Length);
-                AdjustVolumeInline(buffer, read, m_volume);
-                await discordStream.WriteAsync(buffer, 0, read, ct).ConfigureAwait(false);
+                while (lookahead.Position < lookahead.Length)
+                {
+                    int read = lookahead.Read(buffer, 0, buffer.Length);
+                    AdjustVolumeInline(buffer, read, m_volume);
+                    await discordStream.WriteAsync(buffer, 0, read, ct).ConfigureAwait(false);
+                }
+                lookahead.Dispose();
             }
 
-            // 5) Continue streaming until EOF or cancellation
+            // 6) Continue streaming until EOF or cancellation
             try
             {
                 int read;
@@ -259,10 +272,11 @@ namespace DiscordMusicBot2.Audio
             {
                 await discordStream.FlushAsync().ConfigureAwait(false);
                 Stop();
-                Debug.Log("<color=cyan>Live YouTube stream finished or stopped.</color>");
+                Debug.Log("<color=cyan>Track finished (Live youtube).</color>");
                 EventHub.Raise(new OnSongFinishedEvent());
             }
         }
+
 
         /// <summary>
         /// Play a live stream from the given URL through FFMPEG.
@@ -352,7 +366,7 @@ namespace DiscordMusicBot2.Audio
             {
                 await discordStream.FlushAsync().ConfigureAwait(false);
                 Stop();
-                Debug.Log("<color=cyan>Live stream finished or stopped.</color>");
+                Debug.Log("<color=cyan>Track finished. (Live Anything)</color>");
                 EventHub.Raise(new OnSongFinishedEvent());
             }
         }
@@ -407,10 +421,12 @@ namespace DiscordMusicBot2.Audio
                 m_cts?.Dispose();
                 m_cts = null;
                 m_discord = null;
+
+
             }
         }
 
-        private static void TryKillDispose(ref Process? proc)
+        private  void TryKillDispose(ref Process? proc)
         {
             try
             {
@@ -425,7 +441,7 @@ namespace DiscordMusicBot2.Audio
             }
         }
 
-        private static void TryDelete(string path)
+        private void TryDelete(string path)
         {
             try
             {

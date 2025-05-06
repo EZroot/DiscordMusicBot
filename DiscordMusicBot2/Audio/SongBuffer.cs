@@ -4,7 +4,7 @@ namespace DiscordMusicBot2.Audio
 {
     internal class SongBuffer
     {
-        public Queue<SongData> m_songBuffer = new();
+        public Queue<SongData> m_songBufferQueue = new();
 
         public SongBuffer() 
         {
@@ -14,12 +14,12 @@ namespace DiscordMusicBot2.Audio
         public void AddSongToQueue(SongData songData)
         {
             Debug.Log($"Enqueueing song data: {songData.ID} {songData.Name} {songData.Duration}");
-            m_songBuffer.Enqueue(songData);
+            m_songBufferQueue.Enqueue(songData);
         }
 
         public SongData? GetSongFromQueue()
         {
-            if (m_songBuffer.TryDequeue(out var songData))
+            if (m_songBufferQueue.TryDequeue(out var songData))
             {
                 return songData;
             }
