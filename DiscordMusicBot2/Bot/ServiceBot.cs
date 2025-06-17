@@ -84,10 +84,11 @@ namespace DiscordMusicBot2.Bot
             EventHub.Unsubscribe<OnTickEvent>(OnTickEventSubscription);
         }
 
-        private void OnTickEventSubscription(OnTickEvent @event)
+        private async Task OnTickEventSubscription(OnTickEvent @event)
         {
             Debug.Log($"OnTickEvent Executed: {@event.Tick}");
         }
+
         private async Task OnSlashCommandRecieved(SocketSlashCommand command)
         {
             _ = Task.Run(async () => await Service.Get<IServiceSlashCommands>().ExecuteCommand(command));

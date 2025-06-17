@@ -35,7 +35,7 @@ namespace DiscordMusicBot2.Timer
                 {
                     m_prevElapsedMilliseconds = sw.ElapsedMilliseconds;
                     m_totalTickCount++;
-                    EventHub.Raise(new OnTickEvent(m_totalTickCount));
+                    _ = EventHub.RaiseAsync(new OnTickEvent(m_totalTickCount));
                 }
             }
             sw.Stop();

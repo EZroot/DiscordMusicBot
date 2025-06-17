@@ -2,49 +2,50 @@
 {
     public static class EventHub
     {
-        private static readonly Dictionary<Type, Delegate> m_eventDelegates = new();
+        // We’ll keep a list of async handlers per event type
+        private static readonly Dictionary<Type, List<Delegate>> _handlers = new();
 
-        public static void Subscribe<T>(Action<T> del) where T : struct
+        public static void Subscribe<T>(Func<T, Task> handler) where T : struct
         {
             var type = typeof(T);
-            if (!m_eventDelegates.ContainsKey(type))
+            if (!_handlers.TryGetValue(type, out var list))
             {
-                m_eventDelegates[type] = null;
+                list = new List<Delegate>();
+                _handlers[type] = list;
             }
-            m_eventDelegates[type] = (Action<T>)m_eventDelegates[type] + del;
-            Debug.Log($"<color=orange>Subscribed to event</color> {type.Name}");
+            list.Add(handler);
+            Debug.Log($"<color=orange>Subscribed to async event</color> {type.Name}");
         }
 
-        public static void Unsubscribe<T>(Action<T> del) where T : struct
+        public static void Unsubscribe<T>(Func<T, Task> handler) where T : struct
         {
             var type = typeof(T);
-            if (m_eventDelegates.ContainsKey(type))
+            if (_handlers.TryGetValue(type, out var list))
             {
-                m_eventDelegates[type] = (Action<T>)m_eventDelegates[type] - del;
-                Debug.Log($"<color=orange>Unsubscribed from event</color> {type.Name}");
+                list.Remove(handler);
+                Debug.Log($"<color=orange>Unsubscribed from async event</color> {type.Name}");
+                if (list.Count == 0) _handlers.Remove(type);
             }
         }
 
-        public static void Raise<T>(T eventArg) where T : struct
+        // Now returns a Task so callers can await it
+        public static async Task RaiseAsync<T>(T eventArg) where T : struct
         {
             var type = typeof(T);
-            if (m_eventDelegates.ContainsKey(type))
+            if (!_handlers.TryGetValue(type, out var list))
+                return;
+
+            // Copy to avoid mutation during invocation
+            var handlers = list.Cast<Func<T, Task>>().ToArray();
+            foreach (var handler in handlers)
             {
-                var del = (Action<T>)m_eventDelegates[type];
-                if (del != null)
+                try
                 {
-                    foreach (var handler in del.GetInvocationList())
-                    {
-                        try
-                        {
-                            ((Action<T>)handler).Invoke(eventArg);
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.Log($"Error occurred processing {type.Name} event: {ex}");
-                        }
-                    }
-                    //Debug.Log($"<color=orange>Raised event</color> {type.Name}");
+                    await handler(eventArg).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log($"Error in async handler for {type.Name}: {ex}");
                 }
             }
         }

@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace DiscordMusicBot2.Audio
 {
-    internal class ServiceAudio : IServiceAudio
+    internal class ServiceAudio : IServiceAudio, IDisposable
     {
         private const int MINUTE_THRESHOLD_TO_PLAY_LIVE = 8; //8 minutes
         private IAudioClient? m_audioClient;
@@ -26,9 +26,14 @@ namespace DiscordMusicBot2.Audio
             EventHub.Subscribe<OnSongFinishedEvent>(OnSongFinished);
         }
 
-        private void OnSongFinished(OnSongFinishedEvent @event)
+        public void Dispose()
         {
-            _ = Skip();
+            EventHub.Unsubscribe<OnSongFinishedEvent>(OnSongFinished);
+        }
+
+        private async Task OnSongFinished(OnSongFinishedEvent @event)
+        {
+            await Skip();
             //m_currentPlayingSong = null;
             //_ = StartNextSong();
         }
