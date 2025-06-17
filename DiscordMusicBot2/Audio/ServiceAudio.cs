@@ -128,21 +128,21 @@ namespace DiscordMusicBot2.Audio
                         aboveMinuteThreshold = parsedDuration.Value.Minutes > MINUTE_THRESHOLD_TO_PLAY_LIVE;
 
                     //Live streams
-                    if (string.IsNullOrEmpty(m_currentPlayingSong.Duration) || aboveMinuteThreshold)
-                    {
-                        Debug.Log("<color=cyan>Live streaming the song...");
-                        if(m_currentPlayingSong.Url.Contains("youtube") || m_currentPlayingSong.Url.Contains("youtu.be"))
-                            await m_playbackManager.PlayLiveYoutubeAsync(m_currentPlayingSong.Url, true).ConfigureAwait(false);
-                        else
-                            await m_playbackManager.PlayLiveAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
-                    }
-                    //Normal songs
-                    else
-                    {
+                    //if (string.IsNullOrEmpty(m_currentPlayingSong.Duration) || aboveMinuteThreshold)
+                    //{
+                    //    Debug.Log("<color=cyan>Live streaming the song...");
+                    //    if(m_currentPlayingSong.Url.Contains("youtube") || m_currentPlayingSong.Url.Contains("youtu.be"))
+                    //        await m_playbackManager.PlayLiveYoutubeAsync(m_currentPlayingSong.Url, true).ConfigureAwait(false);
+                    //    else
+                    //        await m_playbackManager.PlayLiveAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
+                    //}
+                    ////Normal songs
+                    //else
+                    //{
                         Debug.Log("<color=cyan>Predownloading song...");
                         //await m_playbackManager.PlayAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
                         await m_playbackManager.PlayAsync(m_currentPlayingSong.Url).ConfigureAwait(false);
-                    }
+                    //}
                 }
                 else
                 {

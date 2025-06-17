@@ -5,383 +5,257 @@ using System.Diagnostics;
 namespace DiscordMusicBot2.Audio
 {
     /// <summary>
-    /// Maintains exactly one <c>yt‑dlp → ffmpeg → Discord</c> pipeline.
+    /// Maintains exactly one <c>yt-dlp → ffmpeg → Discord</c> pipeline.
     /// Raises <see cref="OnSongFinishedEvent"/> when the track ends on its own
-    /// (i.e. not skipped or pre‑empted by another /play).
+    /// (i.e. not skipped or pre-empted by another /play).
     /// </summary>
     internal class ProcessPlaybackManager
     {
         private const bool DEBUG_MODE = true;
+        private const int AUDIO_BYTE_SIZE = 3840;    // ~40 ms @48 kHz stereo
+        private const int PREBUFFER_SECONDS = 5;
 
-        private const int AUDIO_BYTE_SIZE = 8192;    // ~40 ms @48 kHz stereo
-        private float m_volume = 0.1f;
+        private float _volume = 0.25f;
+        private readonly object _threadGate = new();
+        private readonly IAudioClient _audioClient;
 
-        private readonly object m_threadGate = new();
-        private readonly IAudioClient m_audioClient;
-
-        private Process? m_ffmpeg;
-        private AudioOutStream? m_discord;
-        private CancellationTokenSource? m_cts;
+        private Process? _ffmpeg;
+        private AudioOutStream? _discordStream;
+        private CancellationTokenSource? _cts;
 
         public ProcessPlaybackManager(IAudioClient discordClient) =>
-            m_audioClient = discordClient;
+            _audioClient = discordClient;
 
         public Task SetVolume(float newVolume)
         {
-            Debug.Log($"<color=magenta>Volume change:</color> {m_volume} → {newVolume}");
-            m_volume = newVolume > 100 ? 1.0f : newVolume * 0.01f;
+            Debug.Log($"<color=magenta>Volume change:</color> {_volume} → {newVolume}");
+            _volume = newVolume > 100 ? 1.0f : newVolume * 0.01f;
             return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Download a youtube video through YT-DLP and then stream that temp file with FFMPEG
-        /// </summary>
-        /// <param name="youtubeUrl"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         public async Task PlayAsync(string youtubeUrl)
         {
             Stop();
-            var cts = new CancellationTokenSource();
+            using var cts = new CancellationTokenSource();
             var ct = cts.Token;
 
-            // 1) Download with both stdout & stderr redirected
+            // 1) Download to temp file
             var tmpFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.m4a");
-            var dlInfo = new ProcessStartInfo
+            await RunProcessAsync(new ProcessStartInfo
             {
                 FileName = "yt-dlp",
-                Arguments = $"--no-playlist -f \"bestaudio[abr<=128]\" -o \"{tmpFile}\" \"{youtubeUrl}\"",
+                Arguments = $"--no-playlist -f \"bestaudio\" -o \"{tmpFile}\" \"{youtubeUrl}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
-            };
-            using var downloadProc = Process.Start(dlInfo)
-                                   ?? throw new InvalidOperationException("Could not start yt-dlp");
+            }, "yt-dlp", ct);
 
-            if (DEBUG_MODE)
-            {
-                _ = PumpStdoutAsync(downloadProc, "yt-dlp");
-                _ = PumpStderrAsync(downloadProc, "yt-dlp");
-            }
-            await downloadProc.WaitForExitAsync(ct).ConfigureAwait(false);
+            // 2) Start ffmpeg reading from that file
+            _ffmpeg = StartFfmpegProcess(
+                "-hide_banner -loglevel info -nostdin " +
+                "-re " +
+                "-thread_queue_size 512 " +
+                $"-i \"{tmpFile}\" " +
+                "-vn " +
+                "-ac 2 -ar 48000 -sample_fmt s16 " +
+                "-fflags +genpts " +
+                "-af \"aresample=async=1000:resampler=soxr\" " +
+                "-f s16le pipe:1");
 
-            if (ct.IsCancellationRequested || downloadProc.ExitCode != 0)
-                return;
+            // 3) Open Discord stream
+            _discordStream = _audioClient.CreatePCMStream(AudioApplication.Music);
 
-            // 2) Spawn FFmpeg with stdout+stderr
-            m_ffmpeg = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "ffmpeg",
-                    // bump to info if you want progress logs
-                    Arguments = "-hide_banner -loglevel info -nostdin -i \""
-                                          + tmpFile + "\" -ac 2 -ar 48000 -f s16le pipe:1",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                },
-                EnableRaisingEvents = true
-            };
-            m_ffmpeg.Exited += (_, __) =>
-            {
-                if (!(cts.IsCancellationRequested) && m_ffmpeg.ExitCode == 0)
-                    Console.WriteLine("[ffmpeg] Exited cleanly.");
-            };
-            m_ffmpeg.Start();
-            //_ = PumpStdoutAsync(m_ffmpeg, "ffmpeg");
-            _ = PumpStderrAsync(m_ffmpeg, "ffmpeg");
+            // 4) Prebuffer + pump into Discord
+            await PrebufferAndStreamAsync(_ffmpeg.StandardOutput.BaseStream, _discordStream, ct, false);
 
-            // 3) Pre‑buffer to avoid underflow
-            const int PREBUFFER_SECONDS = 5;
-            int prebufferBytes = 48000 * 2 * 2 * PREBUFFER_SECONDS;
-            using var lookahead = new MemoryStream();
-            var buffer = new byte[AUDIO_BYTE_SIZE];
-            int buffered = 0;
-
-            while (buffered < prebufferBytes)
-            {
-                int read = await m_ffmpeg.StandardOutput.BaseStream
-                                .ReadAsync(buffer, 0, buffer.Length, ct)
-                                .ConfigureAwait(false);
-                if (read <= 0) break;
-                lookahead.Write(buffer, 0, read);
-                buffered += read;
-            }
-            lookahead.Position = 0;
-
-            // 4) Create Discord stream & drain the pre‑buffer
-            var discordStream = m_audioClient.CreatePCMStream(AudioApplication.Music);
-            m_discord = discordStream;
-
-            while (lookahead.Position < lookahead.Length)
-            {
-                int read = lookahead.Read(buffer, 0, buffer.Length);
-                AdjustVolumeInline(buffer, read, m_volume);
-                await discordStream.WriteAsync(buffer, 0, read, ct).ConfigureAwait(false);
-            }
-
-            // 5) Continue streaming until EOF, then clean up
-            try
-            {
-                int read;
-                while ((read = await m_ffmpeg.StandardOutput.BaseStream
-                                   .ReadAsync(buffer, 0, buffer.Length, ct)
-                                   .ConfigureAwait(false)) > 0)
-                {
-                    AdjustVolumeInline(buffer, read, m_volume);
-                    await discordStream.WriteAsync(buffer, 0, read, ct).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException) { }
-            finally
-            {
-                await discordStream.FlushAsync().ConfigureAwait(false);
-                Stop();
-                TryDelete(tmpFile);
-                Debug.Log($"<color=green>Deleted temp file:</color> {tmpFile}");
-                Debug.Log("<color=cyan>Track finished.</color>");
-                EventHub.Raise(new OnSongFinishedEvent());
-            }
+            // 5) Clean up
+            await _discordStream.FlushAsync().ConfigureAwait(false);
+            Stop();
+            TryDelete(tmpFile);
+            Debug.Log($"<color=green>Deleted temp file:</color> {tmpFile}");
+            Debug.Log("<color=cyan>Track finished.</color>");
+            EventHub.Raise(new OnSongFinishedEvent());
         }
 
-        /// <summary>
-        /// Live‐streams a YouTube URL by resolving its direct audio URL with yt-dlp,
-        /// then feeding that URL into ffmpeg → Discord with a pre‐buffer.
-        /// </summary>
         public async Task PlayLiveYoutubeAsync(string youtubeUrl, bool usePrebuffer = true)
         {
             Stop();
-            m_cts = new CancellationTokenSource();
-            var ct = m_cts.Token;
+            _cts = new CancellationTokenSource();
+            var ct = _cts.Token;
 
-            // 1) Use yt-dlp to get the direct media URL (no download)
-            string mediaUrl;
+            // 1) Get direct media URL
+            string mediaUrl = null!;
+            await RunProcessAsync(new ProcessStartInfo
             {
-                var getUrlInfo = new ProcessStartInfo
-                {
-                    FileName = "yt-dlp",
-                    Arguments = $"--no-playlist -g \"{youtubeUrl}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,                   
-                };
-                Debug.Log("Staring yt-dlp process..");
-
-                using var proc = Process.Start(getUrlInfo)
-                               ?? throw new InvalidOperationException("Could not start yt-dlp");
-
-                Debug.Log("Trying to get media url...");
-
-                mediaUrl = (await proc.StandardOutput.ReadLineAsync().ConfigureAwait(false))?.Trim()
+                FileName = "yt-dlp",
+                Arguments = $"--no-playlist -g \"{youtubeUrl}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            }, "yt-dlp", ct, async output =>
+            {
+                mediaUrl = (await output.ReadLineAsync().ConfigureAwait(false))?.Trim()
                            ?? throw new InvalidOperationException("yt-dlp returned no URL");
+            });
 
-                Debug.Log("Wait for exit async...");
+            // 2) Start ffmpeg on media URL
+            _ffmpeg = StartFfmpegProcess(
+                "-hide_banner -loglevel info -nostdin " +
+                "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 " +
+                "-re -i \"" + mediaUrl + "\" -ac 2 -ar 48000 -f s16le pipe:1");
 
-                await proc.WaitForExitAsync(ct).ConfigureAwait(false);
-                if (proc.ExitCode != 0)
-                    throw new InvalidOperationException("yt-dlp failed to extract URL");
-            }
-            Debug.Log("Trying to launchg ffmpeg with media url...");
-            // 2) Spawn FFmpeg reading directly from that media URL
-            m_ffmpeg = new Process
+            // 3) Create Discord stream
+            _discordStream = _audioClient.CreatePCMStream(AudioApplication.Music);
+
+            // 4) Optional prebuffer + stream
+            await PrebufferAndStreamAsync(_ffmpeg.StandardOutput.BaseStream, _discordStream, ct, usePrebuffer);
+
+            // 5) Done
+            await _discordStream.FlushAsync().ConfigureAwait(false);
+            Stop();
+            Debug.Log("<color=cyan>Track finished (Live youtube).</color>");
+            EventHub.Raise(new OnSongFinishedEvent());
+        }
+
+        public async Task PlayLiveAsync(string streamUrl)
+        {
+            Stop();
+            _cts = new CancellationTokenSource();
+            var ct = _cts.Token;
+
+            // Start ffmpeg directly on the stream URL
+            _ffmpeg = StartFfmpegProcess(
+                "-hide_banner -loglevel info -nostdin " +
+                "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 " +
+                "-re -i \"" + streamUrl + "\" -ac 2 -ar 48000 -f s16le pipe:1");
+
+            _discordStream = _audioClient.CreatePCMStream(AudioApplication.Music);
+
+            await PrebufferAndStreamAsync(_ffmpeg.StandardOutput.BaseStream, _discordStream, ct);
+
+            await _discordStream.FlushAsync().ConfigureAwait(false);
+            Stop();
+            Debug.Log("<color=cyan>Track finished. (Live Anything)</color>");
+            EventHub.Raise(new OnSongFinishedEvent());
+        }
+
+        #region Helpers
+
+        private Process StartFfmpegProcess(string arguments)
+        {
+            var proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments =
-                        "-hide_banner -loglevel info -nostdin " +
-                        "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 " +
-                        "-re " +  // <── Throttle FFmpeg to real-time
-                        $"-i \"{mediaUrl}\" " +
-                        "-ac 2 -ar 48000 -f s16le pipe:1",
+                    Arguments = arguments,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
+                    RedirectStandardError = true
                 },
                 EnableRaisingEvents = true
             };
-            m_ffmpeg.Exited += (_, __) =>
+            proc.Exited += (_, __) =>
             {
-                if (!ct.IsCancellationRequested && m_ffmpeg.ExitCode == 0)
-                    Console.WriteLine("[ffmpeg] exited cleanly");
+                if ((_cts?.IsCancellationRequested ?? true) == false && proc.ExitCode == 0)
+                    Console.WriteLine("[ffmpeg] exited cleanly.");
             };
-            m_ffmpeg.Start();
+            proc.Start();
+            if (DEBUG_MODE)
+                _ = PumpStderrAsync(proc, "ffmpeg");
+            return proc;
+        }
 
+        private async Task RunProcessAsync(
+            ProcessStartInfo psi,
+            string tag,
+            CancellationToken ct,
+            Func<StreamReader, Task>? onStdout = null)
+        {
+            using var proc = Process.Start(psi)
+                        ?? throw new InvalidOperationException($"Could not start {psi.FileName}");
             if (DEBUG_MODE)
             {
-                //_ = PumpStdoutAsync(m_ffmpeg, "ffmpeg");
-                _ = PumpStderrAsync(m_ffmpeg, "ffmpeg");
+                _ = PumpStdoutAsync(proc, tag);
+                _ = PumpStderrAsync(proc, tag);
             }
 
-            // 3 & 4) Optional Pre-buffer
-            MemoryStream? lookahead = null;
+            if (onStdout != null)
+                await onStdout(proc.StandardOutput).ConfigureAwait(false);
+
+            await proc.WaitForExitAsync(ct).ConfigureAwait(false);
+            if (ct.IsCancellationRequested || proc.ExitCode != 0)
+                throw new OperationCanceledException($"{tag} failed or cancelled");
+        }
+
+        /// <summary>
+        /// Pulls <paramref name="prebuffer"/> bytes first, then streams continuously to Discord.
+        /// </summary>
+        private async Task PrebufferAndStreamAsync(
+            Stream ffmpegOut,
+            AudioOutStream discordStream,
+            CancellationToken ct,
+            bool doPrebuffer = true)
+        {
             byte[] buffer = new byte[AUDIO_BYTE_SIZE];
-            if (usePrebuffer)
+            Stream? lookahead = null;
+
+            if (doPrebuffer)
             {
-                const int PREBUFFER_SECONDS = 5;
-                int prebufferBytes = 48000 /*Hz*/ * 2 /*ch*/ * 2 /*bytes*/ * PREBUFFER_SECONDS;
+                int prebufferBytes = 48_000 /*Hz*/ * 2 /*ch*/ * 2 /*bytes*/ * PREBUFFER_SECONDS;
                 lookahead = new MemoryStream();
                 int buffered = 0;
-
                 while (buffered < prebufferBytes)
                 {
-                    int read = await m_ffmpeg.StandardOutput.BaseStream
-                                     .ReadAsync(buffer, 0, buffer.Length, ct)
-                                     .ConfigureAwait(false);
+                    int read = await ffmpegOut.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false);
                     if (read <= 0) break;
-                    lookahead.Write(buffer, 0, read);
+                    await lookahead.WriteAsync(buffer, 0, read, ct).ConfigureAwait(false);
                     buffered += read;
                 }
                 lookahead.Position = 0;
             }
 
-            // 5) Create the Discord stream & drain pre-buffer if present
-            var discordStream = m_audioClient.CreatePCMStream(AudioApplication.Music);
-            m_discord = discordStream;
-
-            if (lookahead is not null)
+            // Drain lookahead
+            if (lookahead != null)
             {
-                while (lookahead.Position < lookahead.Length)
+                while (true)
                 {
-                    int read = lookahead.Read(buffer, 0, buffer.Length);
-                    AdjustVolumeInline(buffer, read, m_volume);
+                    int read = await lookahead.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false);
+                    if (read <= 0) break;
+                    AdjustVolumeInline(buffer, read, _volume);
                     await discordStream.WriteAsync(buffer, 0, read, ct).ConfigureAwait(false);
                 }
                 lookahead.Dispose();
             }
 
-            // 6) Continue streaming until EOF or cancellation
+            // Continuous stream
             try
             {
-                int read;
-                while ((read = await m_ffmpeg.StandardOutput.BaseStream
-                                   .ReadAsync(buffer, 0, buffer.Length, ct)
-                                   .ConfigureAwait(false)) > 0)
+                while (true)
                 {
-                    AdjustVolumeInline(buffer, read, m_volume);
+                    int read = await ffmpegOut.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false);
+                    if (read <= 0) break;
+                    AdjustVolumeInline(buffer, read, _volume);
                     await discordStream.WriteAsync(buffer, 0, read, ct).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) { }
-            finally
-            {
-                await discordStream.FlushAsync().ConfigureAwait(false);
-                Stop();
-                Debug.Log("<color=cyan>Track finished (Live youtube).</color>");
-                EventHub.Raise(new OnSongFinishedEvent());
-            }
-        }
-
-
-        /// <summary>
-        /// Play a live stream from the given URL through FFMPEG.
-        /// </summary>
-        /// <param name="streamUrl"></param>
-        /// <returns></returns>
-        public async Task PlayLiveAsync(string streamUrl)
-        {
-            // 1) Cancel any existing playback
-            Stop();
-            m_cts = new CancellationTokenSource();
-            var ct = m_cts.Token;
-
-            // 2) Spawn FFmpeg reading directly from the stream URL
-            m_ffmpeg = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "ffmpeg",
-                    Arguments = "-hide_banner -loglevel info -nostdin " +
-                                "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 " +
-                                "-re " +  // <── Throttle FFmpeg to real-time
-                                $"-i \"{streamUrl}\" -ac 2 -ar 48000 -f s16le pipe:1",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                },
-                EnableRaisingEvents = true
-            };
-            m_ffmpeg.Exited += (_, __) =>
-            {
-                if (!ct.IsCancellationRequested && m_ffmpeg.ExitCode == 0)
-                    Console.WriteLine("[ffmpeg] Exited cleanly.");
-            };
-            m_ffmpeg.Start();
-
-            if (DEBUG_MODE)
-            {
-                //_ = PumpStdoutAsync(m_ffmpeg, "ffmpeg");
-                _ = PumpStderrAsync(m_ffmpeg, "ffmpeg");
-            }
-
-            // 3) Pre-buffer ~5 seconds to avoid drop-outs
-            const int PREBUFFER_SECONDS = 5;
-            int prebufferBytes = 48000 /*Hz*/ * 2 /*channels*/ * 2 /*bytes-per-sample*/ * PREBUFFER_SECONDS;
-            using var lookahead = new MemoryStream();
-            var buffer = new byte[AUDIO_BYTE_SIZE];
-            int buffered = 0;
-
-            while (buffered < prebufferBytes)
-            {
-                int read = await m_ffmpeg.StandardOutput.BaseStream
-                                .ReadAsync(buffer, 0, buffer.Length, ct)
-                                .ConfigureAwait(false);
-                if (read <= 0) break;
-                lookahead.Write(buffer, 0, read);
-                buffered += read;
-            }
-            lookahead.Position = 0;
-
-            // 4) Create the Discord PCM stream & drain the pre-buffer
-            var discordStream = m_audioClient.CreatePCMStream(AudioApplication.Music);
-            m_discord = discordStream;
-
-            while (lookahead.Position < lookahead.Length)
-            {
-                int read = lookahead.Read(buffer, 0, buffer.Length);
-                AdjustVolumeInline(buffer, read, m_volume);
-                await discordStream.WriteAsync(buffer, 0, read, ct).ConfigureAwait(false);
-            }
-
-            // 5) Continue streaming until the source ends or we cancel
-            try
-            {
-                int read;
-                while ((read = await m_ffmpeg.StandardOutput.BaseStream
-                                   .ReadAsync(buffer, 0, buffer.Length, ct)
-                                   .ConfigureAwait(false)) > 0)
-                {
-                    AdjustVolumeInline(buffer, read, m_volume);
-                    await discordStream.WriteAsync(buffer, 0, read, ct).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException) { }
-            finally
-            {
-                await discordStream.FlushAsync().ConfigureAwait(false);
-                Stop();
-                Debug.Log("<color=cyan>Track finished. (Live Anything)</color>");
-                EventHub.Raise(new OnSongFinishedEvent());
-            }
         }
 
         private static async Task PumpStdoutAsync(Process proc, string tag)
         {
-            using var reader = proc.StandardOutput;
-            while (await reader.ReadLineAsync().ConfigureAwait(false) is string line)
+            using var rdr = proc.StandardOutput;
+            while (await rdr.ReadLineAsync().ConfigureAwait(false) is string line)
                 Console.WriteLine($"[{tag} OUT] {line}");
         }
 
         private static async Task PumpStderrAsync(Process proc, string tag)
         {
-            using var reader = proc.StandardError;
-            while (await reader.ReadLineAsync().ConfigureAwait(false) is string line)
+            using var rdr = proc.StandardError;
+            while (await rdr.ReadLineAsync().ConfigureAwait(false) is string line)
                 Console.WriteLine($"[{tag} ERR] {line}");
         }
 
@@ -391,8 +265,7 @@ namespace DiscordMusicBot2.Audio
             for (int i = 0; i < count; i += 2)
             {
                 short sample = (short)((buffer[i + 1] << 8) | buffer[i]);
-                int adj = (int)(sample * volume);
-                adj = Math.Clamp(adj, short.MinValue, short.MaxValue);
+                int adj = Math.Clamp((int)(sample * volume), short.MinValue, short.MaxValue);
                 short outSamp = (short)adj;
                 buffer[i] = (byte)(outSamp & 0xFF);
                 buffer[i + 1] = (byte)((outSamp >> 8) & 0xFF);
@@ -401,54 +274,40 @@ namespace DiscordMusicBot2.Audio
 
         public void Stop()
         {
-            lock (m_threadGate)
+            lock (_threadGate)
             {
-                m_cts?.Cancel();
+                _cts?.Cancel();
 
-                if (m_ffmpeg != null && !m_ffmpeg.HasExited)
-                {
+                if (_ffmpeg is { HasExited: false })
                     Debug.Log("<color=yellow>Stopping ffmpeg process...</color>");
-                }
-                TryKillDispose(ref m_ffmpeg);
-                Debug.Log("<color=yellow>ffmpeg disposed.</color>");
 
-                if (m_discord != null)
+                TryKillDispose(ref _ffmpeg);
+
+                if (_discordStream != null)
                 {
                     Debug.Log("<color=yellow>Disposing Discord stream...</color>");
-                    m_discord.Dispose();
+                    _discordStream.Dispose();
                 }
 
-                m_cts?.Dispose();
-                m_cts = null;
-                m_discord = null;
-
-
+                _cts?.Dispose();
+                _cts = null;
+                _discordStream = null;
             }
         }
 
-        private  void TryKillDispose(ref Process? proc)
+        private void TryKillDispose(ref Process? proc)
         {
-            try
-            {
-                if (proc != null && !proc.HasExited)
-                    proc.Kill(true);
-            }
+            try { proc?.Kill(true); }
             catch { }
-            finally
-            {
-                proc?.Dispose();
-                proc = null;
-            }
+            finally { proc?.Dispose(); proc = null; }
         }
 
         private void TryDelete(string path)
         {
-            try
-            {
-                if (File.Exists(path))
-                    File.Delete(path);
-            }
+            try { File.Delete(path); }
             catch { }
         }
+
+        #endregion
     }
 }
