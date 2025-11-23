@@ -3,6 +3,7 @@ bin/
 obj/
 out/
 
+discordbot_env/
 config.ini
 
 ## User-specific files
