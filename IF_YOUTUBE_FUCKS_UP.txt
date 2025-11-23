@@ -1,0 +1,2 @@
+delete virutal environment and remake it because 
+fucking python trash garbage
