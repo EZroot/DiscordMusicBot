@@ -3,6 +3,8 @@ bin/
 obj/
 out/
 
+config.ini
+
 ## User-specific files
 *.user
 *.userosscache
